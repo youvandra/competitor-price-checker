@@ -1,0 +1,43 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Competitor Price Checker">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#111a2e"/>
+    </linearGradient>
+    <linearGradient id="icon" x1="0" y1="0" x2="160" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="wm" x1="300" y1="0" x2="1000" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c7d2fe"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="320" rx="24" fill="url(#bg)"/>
+  <circle cx="1040" cy="70" r="240" fill="#4f46e5" opacity="0.08"/>
+
+  <!-- icon (scaled from the 256 mark) -->
+  <g transform="translate(72,84) scale(0.60)">
+    <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#icon)"/>
+    <rect x="52" y="188" width="152" height="6" rx="3" fill="#ffffff" opacity="0.35"/>
+    <rect x="156" y="70"  width="34" height="118" rx="9" fill="#ffffff" opacity="0.45"/>
+    <rect x="110" y="104" width="34" height="84"  rx="9" fill="#ffffff" opacity="0.65"/>
+    <rect x="64" y="128" width="34" height="60" rx="9" fill="#ffffff"/>
+    <circle cx="81" cy="96" r="22" fill="#22c55e"/>
+    <path d="M71 96.5 L78 103.5 L92 89.5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <text x="240" y="150" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="60" font-weight="700" fill="url(#wm)">Competitor Price Checker</text>
+  <text x="242" y="196" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" fill="#94a3b8">Competitor-price intelligence for agents — one call, a pricing decision.</text>
+
+  <!-- chips -->
+  <g font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="600">
+    <rect x="242" y="228" width="168" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="326" y="254" fill="#e2e8f0" text-anchor="middle">OKX.AI · A2MCP</text>
+    <rect x="424" y="228" width="168" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="508" y="254" fill="#e2e8f0" text-anchor="middle">x402 · X Layer</text>
+    <rect x="606" y="228" width="176" height="40" rx="20" fill="#1e293b" stroke="#334155"/>
+    <text x="694" y="254" fill="#e2e8f0" text-anchor="middle">0.4 USDT / call</text>
+  </g>
+</svg>

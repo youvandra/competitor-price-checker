@@ -1,0 +1,31 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Competitor Price Checker logo">
+  <defs>
+    <linearGradient id="cpc-bg" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="cpc-win" x1="60" y1="120" x2="92" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e0f2fe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- app-icon background -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#cpc-bg)"/>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="black" opacity="0.06"/>
+
+  <!-- baseline -->
+  <rect x="52" y="188" width="152" height="6" rx="3" fill="#ffffff" opacity="0.35"/>
+
+  <!-- competitor price bars (tallest = most expensive rivals) -->
+  <rect x="156" y="70"  width="34" height="118" rx="9" fill="#ffffff" opacity="0.45"/>
+  <rect x="110" y="104" width="34" height="84"  rx="9" fill="#ffffff" opacity="0.65"/>
+
+  <!-- winning (lowest) price bar, highlighted -->
+  <rect x="64" y="128" width="34" height="60" rx="9" fill="url(#cpc-win)"/>
+
+  <!-- win badge above the lowest bar -->
+  <circle cx="81" cy="96" r="22" fill="#22c55e"/>
+  <circle cx="81" cy="96" r="22" fill="black" opacity="0.05"/>
+  <path d="M71 96.5 L78 103.5 L92 89.5" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
