@@ -181,7 +181,10 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
 - [x] Walmart service (`/walmart`, `/preview/walmart`) — keyword-based, actor `pear_fight~walmart-scraper`
       (~35s, $3/1k). Generalized keyword handler (eBay + Walmart share parse/preflight/runner factory).
       relevanceFilter + currencySymbol moved to util.ts. 3 marketplaces live.
-- [ ] Optional: AliExpress / SEA marketplaces, landing page, tighter keyword matching (UPC/EPID).
+- [x] Landing page + live demo (`backend/public/index.html`) — orange brand, marketplace tabs,
+      calls free `/preview/*`, renders market stats + strategy cards + recommendation. Served via
+      express.static at `/`. Tested end-to-end in browser.
+- [ ] Optional: AliExpress / SEA marketplaces, tighter keyword matching (UPC/EPID).
 - Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).

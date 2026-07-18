@@ -1,4 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
 import { fetchEbayOffers } from "./ebay.js";
@@ -11,6 +13,10 @@ import type { CheckInput } from "./types.js";
 
 const app = express();
 app.use(express.json());
+
+// Serve the landing page + live demo (backend/public).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 const AMAZON_META = {
   leaderLabel: "Buy Box",

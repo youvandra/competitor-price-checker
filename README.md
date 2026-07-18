@@ -197,14 +197,17 @@ npm install
 npm run dev               # starts on PORT (default 3002)
 ```
 
-With `X402_MODE=off` the payment gate is disabled, so `/amazon` runs without payment — handy for
-local testing. Try it:
+Open **http://localhost:3002** for the landing page + a live demo (Amazon / eBay / Walmart tabs,
+free `preview` calls). Or hit the API directly:
 
 ```bash
 curl -s -X POST http://localhost:3002/preview/amazon \
   -H 'Content-Type: application/json' \
   -d '{"asin":"B0966NLTZS","my_price":610,"my_cost":450}'
 ```
+
+With `X402_MODE=off` the payment gate is disabled, so `/amazon` runs without payment — handy for
+local testing.
 
 Scripts: `npm run dev` · `npm run build` · `npm start` · `npm test` · `npm run typecheck`.
 
@@ -245,8 +248,9 @@ competitor-price-checker/
 ├── docs/
 │   └── PLANNING.md       decisions log + architecture notes
 └── backend/
+    ├── public/           landing page + live demo (index.html, Logo.png)
     └── src/
-        ├── index.ts      Express app: routes, preflight, rate limit
+        ├── index.ts      Express app: static, routes, preflight, rate limit
         ├── x402.ts       path-based x402 gate + 402 challenge
         ├── amazon.ts     adapter: URL→ASIN, Apify fetch, normalize (Buy Box)
         ├── ebay.ts       adapter: keyword → Apify eBay search, normalize

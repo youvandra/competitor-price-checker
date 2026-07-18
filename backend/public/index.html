@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competitor Price Checker</title>
+<link rel="icon" href="/Logo.png">
+<style>
+  :root{
+    --orange:#fa6109; --orange-2:#ff8a3d; --navy:#0b1220; --panel:#111a2e;
+    --panel-2:#0f1729; --border:#263248; --text:#e6edf6; --muted:#94a3b8;
+    --green:#22c55e; --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 80% -10%, rgba(250,97,9,.10), transparent), var(--navy);
+    color:var(--text); font-family:'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--orange-2); text-decoration:none}
+  .wrap{max-width:920px; margin:0 auto; padding:32px 20px 64px}
+  /* hero */
+  .hero{display:flex; align-items:center; gap:20px; flex-wrap:wrap}
+  .hero img{width:84px; height:84px}
+  .hero h1{margin:0; font-size:34px; letter-spacing:-.5px;
+    background:linear-gradient(90deg,#ffb37a,var(--orange)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .hero p{margin:4px 0 0; color:var(--muted); font-size:16px}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px}
+  .chip{font-size:13px; font-weight:600; color:var(--orange-2);
+    border:1px solid rgba(250,97,9,.5); background:#1a1206; padding:5px 12px; border-radius:999px}
+  /* card */
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2)); border:1px solid var(--border);
+    border-radius:var(--radius); padding:20px; margin-top:24px}
+  .tabs{display:flex; gap:8px; margin-bottom:16px}
+  .tab{flex:1; text-align:center; padding:10px; border-radius:12px; cursor:pointer; font-weight:700;
+    border:1px solid var(--border); background:#0c1424; color:var(--muted); user-select:none; transition:.15s}
+  .tab.active{color:#fff; border-color:var(--orange); background:linear-gradient(180deg,#2a1608,#1a1206)}
+  .field{margin:12px 0}
+  label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+  input{width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--border);
+    background:#0a1120; color:var(--text); font-size:15px; outline:none}
+  input:focus{border-color:var(--orange)}
+  .row{display:flex; gap:12px}
+  .row .field{flex:1}
+  .btn{margin-top:8px; width:100%; padding:13px; border:none; border-radius:12px; cursor:pointer;
+    font-size:16px; font-weight:800; color:#1a0d02;
+    background:linear-gradient(90deg,var(--orange-2),var(--orange))}
+  .btn:disabled{opacity:.6; cursor:progress}
+  .hint{font-size:12px; color:var(--muted); margin-top:6px}
+  /* result */
+  #out{margin-top:20px; display:none}
+  .summary{background:#0a1120; border:1px solid var(--border); border-left:4px solid var(--orange);
+    border-radius:12px; padding:14px; font-size:15px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:14px}
+  .stat{background:#0c1424; border:1px solid var(--border); border-radius:12px; padding:12px}
+  .stat .k{font-size:12px; color:var(--muted)}
+  .stat .v{font-size:19px; font-weight:800; margin-top:2px}
+  h3{margin:22px 0 8px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
+  .strat{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px}
+  .s{background:#0c1424; border:1px solid var(--border); border-radius:12px; padding:14px; position:relative}
+  .s.rec{border-color:var(--green); box-shadow:0 0 0 1px rgba(34,197,94,.4)}
+  .s .name{font-weight:800; font-size:15px}
+  .s .price{font-size:24px; font-weight:800; color:var(--orange-2); margin:4px 0}
+  .s .note{font-size:12.5px; color:var(--muted)}
+  .s .margin{font-size:12px; margin-top:8px; color:var(--green); font-weight:700}
+  .badge{position:absolute; top:-9px; right:12px; background:var(--green); color:#052e13;
+    font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px}
+  .caveat{margin-top:16px; font-size:12.5px; color:var(--muted); border-top:1px dashed var(--border); padding-top:12px}
+  .err{color:#fca5a5; background:#2a0f0f; border:1px solid #7f1d1d; padding:12px; border-radius:12px}
+  .spin{display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.4);
+    border-top-color:#1a0d02; border-radius:50%; animation:sp .7s linear infinite; vertical-align:-3px; margin-right:8px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  footer{margin-top:36px; text-align:center; color:var(--muted); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <img src="/Logo.png" alt="Competitor Price Checker logo">
+    <div>
+      <h1>Competitor Price Checker</h1>
+      <p>Give it a product — get a pricing decision, not a data dump.</p>
+      <div class="chips">
+        <span class="chip">OKX.AI · A2MCP</span>
+        <span class="chip">x402 · X Layer</span>
+        <span class="chip">0.4 USDT / call</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-mk="amazon">Amazon</div>
+      <div class="tab" data-mk="ebay">eBay</div>
+      <div class="tab" data-mk="walmart">Walmart</div>
+    </div>
+
+    <div class="field" id="f-amazon">
+      <label>Amazon product URL or ASIN</label>
+      <input id="in-amazon" placeholder="https://www.amazon.com/dp/B0966NLTZS">
+    </div>
+    <div class="field" id="f-keyword" style="display:none">
+      <label>Product search keyword</label>
+      <input id="in-keyword" placeholder="logitech mx master 3s wireless mouse">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Your price (optional)</label>
+        <input id="in-price" type="number" step="0.01" placeholder="610">
+      </div>
+      <div class="field">
+        <label>Your cost (optional)</label>
+        <input id="in-cost" type="number" step="0.01" placeholder="450">
+      </div>
+    </div>
+
+    <button class="btn" id="go">Check competitor prices</button>
+    <div class="hint">Live preview — free, no payment. Real scrape can take ~10–35s.</div>
+
+    <div id="out"></div>
+  </div>
+
+  <footer>
+    A2MCP service on OKX.AI · <a href="https://github.com/youvandra/competitor-price-checker" target="_blank" rel="noopener">GitHub</a> · <a href="/quote" target="_blank">/quote</a>
+  </footer>
+</div>
+
+<script>
+  let mk = "amazon";
+  const $ = (id) => document.getElementById(id);
+
+  document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    mk = t.dataset.mk;
+    $("f-amazon").style.display = mk === "amazon" ? "" : "none";
+    $("f-keyword").style.display = mk === "amazon" ? "none" : "";
+  });
+
+  const money = (c, n) => c + Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  function render(d){
+    const c = d.product.currency;
+    const m = d.market;
+    const stat = (k,v) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+    const strat = d.strategies.map(s => `
+      <div class="s ${s.name===d.recommendation?'rec':''}">
+        ${s.name===d.recommendation?'<span class="badge">RECOMMENDED</span>':''}
+        <div class="name">${s.name}</div>
+        <div class="price">${money(c, s.price)}</div>
+        <div class="note">${s.note}</div>
+        ${s.margin!==undefined?`<div class="margin">margin ${money(c, s.margin)}</div>`:''}
+      </div>`).join("");
+    return `
+      <div class="summary">${d.summary}</div>
+      <div class="grid">
+        ${stat(m.leaderLabel, money(c, m.leaderPrice))}
+        ${stat("Lowest", money(c, m.lowest))}
+        ${stat("Median", money(c, m.median))}
+        ${stat("Highest", money(c, m.highest))}
+        ${stat("Offers", m.offerCount + " / " + m.totalOffers)}
+      </div>
+      <h3>Pricing strategies</h3>
+      <div class="strat">${strat}</div>
+      <div class="caveat">${d.evidence.caveat}</div>`;
+  }
+
+  $("go").onclick = async () => {
+    const out = $("out");
+    const body = {};
+    if (mk === "amazon") {
+      const v = $("in-amazon").value.trim();
+      if (!v) return alert("Enter an Amazon URL or ASIN");
+      if (/^https?:/i.test(v)) body.product_url = v; else body.asin = v;
+    } else {
+      const v = $("in-keyword").value.trim();
+      if (!v) return alert("Enter a search keyword");
+      body.query = v;
+    }
+    const p = $("in-price").value, cst = $("in-cost").value;
+    if (p) body.my_price = Number(p);
+    if (cst) body.my_cost = Number(cst);
+
+    $("go").disabled = true;
+    $("go").innerHTML = '<span class="spin"></span>Checking…';
+    out.style.display = "block";
+    out.innerHTML = '<div class="summary">Scraping live competitor offers…</div>';
+    try {
+      const res = await fetch("/preview/" + mk, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { out.innerHTML = `<div class="err">${data.error || "Request failed"}</div>`; }
+      else { out.innerHTML = render(data); }
+    } catch (e) {
+      out.innerHTML = `<div class="err">${e.message}</div>`;
+    } finally {
+      $("go").disabled = false;
+      $("go").textContent = "Check competitor prices";
+    }
+  };
+</script>
+</body>
+</html>
