@@ -1,5 +1,6 @@
 import { config } from "./config.js";
 import { TtlCache } from "./cache.js";
+import { cleanSeller } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 // Amazon adapter: URL -> ASIN, Apify offers scraper -> NormalizedOffer[].
@@ -88,7 +89,7 @@ export async function fetchAmazonOffers(
       const price = o.price as number;
       const shipping = typeof o.shippingPrice === "number" ? o.shippingPrice : 0;
       return {
-        sellerName: o.sellerName || "Unknown seller",
+        sellerName: cleanSeller(o.sellerName),
         sellerId: o.sellerId,
         price,
         shipping,

@@ -1,7 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import { config } from "./config.js";
 import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
-import { fetchEbayOffers } from "./ebay.js";
+import { fetchEbayOffers, relevanceFilter } from "./ebay.js";
 import { buildAdvice } from "./strategy.js";
 import { paidRoute, x402Info } from "./x402.js";
 import type { CheckInput } from "./types.js";
@@ -165,11 +165,12 @@ async function runEbay(req: Request, res: Response): Promise<void> {
   const { query, myPrice, myCost } = parsed.value;
   try {
     const { data, fromCache } = await fetchEbayOffers(query);
+    const offers = relevanceFilter(data.offers, myPrice);
     const advice = buildAdvice({
       marketplace: "ebay.com",
       productId: query,
       currency: data.currency,
-      offers: data.offers,
+      offers,
       totalOffers: data.totalOffers,
       fromCache,
       leaderLabel: EBAY_META.leaderLabel,

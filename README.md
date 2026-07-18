@@ -111,7 +111,7 @@ Every marketplace returns the **same** result shape — only the input and the `
 | Field      | Type   | Required | Notes                                              |
 |------------|--------|----------|----------------------------------------------------|
 | `query`    | string | yes      | Product search keyword. Be specific for a tight match. |
-| `my_price` | number | no       | Your current price.                                |
+| `my_price` | number | no       | Your current price — also anchors eBay relevance (drops off-band accessory listings). |
 | `my_cost`  | number | no       | Your unit cost — unlocks `Margin Floor`.           |
 
 ## Example
