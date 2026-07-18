@@ -3,3 +3,6 @@ dist/
 .env
 *.log
 scratch/
+
+# macOS
+.DS_Store
