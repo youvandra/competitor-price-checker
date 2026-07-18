@@ -4,8 +4,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-MVP-2ea44f" alt="status">
-  <img src="https://img.shields.io/badge/OKX.AI-A2MCP-4f46e5" alt="OKX.AI A2MCP">
-  <img src="https://img.shields.io/badge/payments-x402-06b6d4" alt="x402">
+  <img src="https://img.shields.io/badge/OKX.AI-A2MCP-fa6109" alt="OKX.AI A2MCP">
+  <img src="https://img.shields.io/badge/payments-x402-fb8b2e" alt="x402">
   <img src="https://img.shields.io/badge/chain-X%20Layer%20(196)-111a2e" alt="X Layer">
   <img src="https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
@@ -215,7 +215,7 @@ Each new marketplace is a new adapter behind the same uniform output — added a
 
 ```
 competitor-price-checker/
-├── assets/               logo + banner (SVG)
+├── assets/               Logo.png + banner.svg
 ├── docs/
 │   └── PLANNING.md       decisions log + architecture notes
 └── backend/
