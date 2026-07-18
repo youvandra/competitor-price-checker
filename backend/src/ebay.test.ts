@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseShipping, relevanceFilter } from "./ebay.js";
+import { parseShipping } from "./ebay.js";
+import { relevanceFilter } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 test("parseShipping handles free + priced + empty", () => {

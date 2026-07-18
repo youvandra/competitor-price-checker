@@ -1,8 +1,11 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import { config } from "./config.js";
 import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
-import { fetchEbayOffers, relevanceFilter } from "./ebay.js";
+import { fetchEbayOffers } from "./ebay.js";
+import { fetchWalmartOffers } from "./walmart.js";
+import { relevanceFilter } from "./util.js";
 import { buildAdvice } from "./strategy.js";
+import type { NormalizedOffer } from "./types.js";
 import { paidRoute, x402Info } from "./x402.js";
 import type { CheckInput } from "./types.js";
 
@@ -16,10 +19,18 @@ const AMAZON_META = {
     "Buy Box is approximated by the lowest landed New offer. Amazon's real Buy Box also weighs Prime, seller rating, fulfillment and stock — price alone is not decisive.",
 };
 const EBAY_META = {
+  marketplace: "ebay.com",
   leaderLabel: "lowest listing",
   source: "Apify automation-lab ebay-scraper",
   caveat:
     "eBay has no Buy Box — the leader is the cheapest New Buy-It-Now listing for your query. Keyword search can surface related or accessory listings, so refine the query for a tighter product match.",
+};
+const WALMART_META = {
+  marketplace: "walmart.com",
+  leaderLabel: "lowest listing",
+  source: "Apify pear_fight walmart-scraper",
+  caveat:
+    "Walmart listings are matched by keyword (no shared Buy Box). Search can surface related items, so a specific query — plus my_price to anchor relevance — sharpens the match.",
 };
 
 // ---- helpers ---------------------------------------------------------------
@@ -114,17 +125,33 @@ async function runAmazon(req: Request, res: Response): Promise<void> {
   }
 }
 
-// ---- eBay (keyword-based) --------------------------------------------------
+// ---- keyword marketplaces (eBay, Walmart) ----------------------------------
+// Both are Definition B: a keyword search returns competing listings. Same
+// input + flow; only the fetch adapter and the metadata differ.
 
-interface ParsedEbay {
+interface ParsedKeyword {
   query: string;
   myPrice?: number;
   myCost?: number;
 }
 
-function parseEbayBody(
+interface KeywordMeta {
+  marketplace: string;
+  leaderLabel: string;
+  source: string;
+  caveat: string;
+}
+
+type KeywordFetch = (
+  query: string
+) => Promise<{
+  data: { offers: NormalizedOffer[]; currency: string; totalOffers: number };
+  fromCache: boolean;
+}>;
+
+function parseKeywordBody(
   body: unknown
-): { ok: true; value: ParsedEbay } | { ok: false; error: string } {
+): { ok: true; value: ParsedKeyword } | { ok: false; error: string } {
   const b = (body ?? {}) as Record<string, unknown>;
   const query = typeof b.query === "string" ? b.query.trim() : "";
   if (!query || query.length < 2) {
@@ -141,50 +168,55 @@ function parseEbayBody(
   return { ok: true, value: { query, myPrice, myCost } };
 }
 
-function preflightEbay(req: Request, res: Response, next: NextFunction): void {
+function preflightKeyword(req: Request, res: Response, next: NextFunction): void {
   const b = (req.body ?? {}) as Record<string, unknown>;
   if (typeof b.query !== "string") return next(); // probe -> let x402 issue 402
-  const parsed = parseEbayBody(req.body);
+  const parsed = parseKeywordBody(req.body);
   if (!parsed.ok) {
     res.status(400).json({ error: parsed.error });
     return;
   }
-  (res.locals as { ebay?: ParsedEbay }).ebay = parsed.value;
+  (res.locals as { keyword?: ParsedKeyword }).keyword = parsed.value;
   next();
 }
 
-async function runEbay(req: Request, res: Response): Promise<void> {
-  const cached = (res.locals as { ebay?: ParsedEbay }).ebay;
-  const parsed = cached
-    ? { ok: true as const, value: cached }
-    : parseEbayBody(req.body);
-  if (!parsed.ok) {
-    res.status(400).json({ error: parsed.error });
-    return;
-  }
-  const { query, myPrice, myCost } = parsed.value;
-  try {
-    const { data, fromCache } = await fetchEbayOffers(query);
-    const offers = relevanceFilter(data.offers, myPrice);
-    const advice = buildAdvice({
-      marketplace: "ebay.com",
-      productId: query,
-      currency: data.currency,
-      offers,
-      totalOffers: data.totalOffers,
-      fromCache,
-      leaderLabel: EBAY_META.leaderLabel,
-      source: EBAY_META.source,
-      caveat: EBAY_META.caveat,
-      myPrice,
-      myCost,
-    });
-    res.json(advice);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    res.status(502).json({ error: `upstream fetch failed: ${msg}` });
-  }
+function makeKeywordRunner(fetchFn: KeywordFetch, meta: KeywordMeta) {
+  return async (req: Request, res: Response): Promise<void> => {
+    const cached = (res.locals as { keyword?: ParsedKeyword }).keyword;
+    const parsed = cached
+      ? { ok: true as const, value: cached }
+      : parseKeywordBody(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
+      return;
+    }
+    const { query, myPrice, myCost } = parsed.value;
+    try {
+      const { data, fromCache } = await fetchFn(query);
+      const offers = relevanceFilter(data.offers, myPrice);
+      const advice = buildAdvice({
+        marketplace: meta.marketplace,
+        productId: query,
+        currency: data.currency,
+        offers,
+        totalOffers: data.totalOffers,
+        fromCache,
+        leaderLabel: meta.leaderLabel,
+        source: meta.source,
+        caveat: meta.caveat,
+        myPrice,
+        myCost,
+      });
+      res.json(advice);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(502).json({ error: `upstream fetch failed: ${msg}` });
+    }
+  };
 }
+
+const runEbay = makeKeywordRunner(fetchEbayOffers, EBAY_META);
+const runWalmart = makeKeywordRunner(fetchWalmartOffers, WALMART_META);
 
 // ---- routes ----------------------------------------------------------------
 
@@ -212,9 +244,18 @@ app.post(
 app.post("/preview/ebay", previewLimiter, runEbay);
 app.post(
   "/ebay",
-  preflightEbay,
+  preflightKeyword,
   paidRoute("POST /ebay", "eBay competitor-price advice (keyword listings)"),
   runEbay
+);
+
+// Walmart (keyword-based competitor pricing).
+app.post("/preview/walmart", previewLimiter, runWalmart);
+app.post(
+  "/walmart",
+  preflightKeyword,
+  paidRoute("POST /walmart", "Walmart competitor-price advice (keyword listings)"),
+  runWalmart
 );
 
 // ---- naive per-IP rate limit for the free preview --------------------------

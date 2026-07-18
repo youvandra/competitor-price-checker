@@ -26,25 +26,6 @@ export function parseShipping(s: string | undefined): number {
   return m ? Number(m[1]) : 0;
 }
 
-/**
- * eBay keyword search surfaces accessories/related items alongside the product.
- * When the caller gives their own price we can anchor to it and drop listings
- * far outside a sensible band (e.g. $8 mouse pads when the mouse is ~$95). If
- * filtering would leave too few, we keep the full set rather than return noise.
- */
-export function relevanceFilter(
-  offers: NormalizedOffer[],
-  anchor?: number
-): NormalizedOffer[] {
-  if (typeof anchor !== "number" || !Number.isFinite(anchor) || anchor <= 0) {
-    return offers;
-  }
-  const lo = anchor * 0.4;
-  const hi = anchor * 2.5;
-  const kept = offers.filter((o) => o.landed >= lo && o.landed <= hi);
-  return kept.length >= 2 ? kept : offers;
-}
-
 export interface EbayFetch {
   offers: NormalizedOffer[];
   currency: string;

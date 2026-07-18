@@ -176,7 +176,12 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
       (~9s, pay-per-event). Generalized strategy engine (buyBox -> leader + leaderLabel). Amazon = "Buy Box",
       eBay = "lowest listing". Uniform output shape across both. Typecheck clean, tested end-to-end.
       NOTE: eBay keyword search surfaces accessories/related items — disclosed in evidence caveat.
-- [ ] Optional: unit tests (strategy math), sanitize messy seller names, Walmart/AliExpress, tighter eBay match.
+- [x] Unit tests (18): extractAsin, parseShipping, relevanceFilter, cleanSeller, currencySymbol, strategy engine.
+- [x] Sanitize seller names (cleanSeller). eBay sort best_match + relevanceFilter(my_price anchor).
+- [x] Walmart service (`/walmart`, `/preview/walmart`) — keyword-based, actor `pear_fight~walmart-scraper`
+      (~35s, $3/1k). Generalized keyword handler (eBay + Walmart share parse/preflight/runner factory).
+      relevanceFilter + currencySymbol moved to util.ts. 3 marketplaces live.
+- [ ] Optional: AliExpress / SEA marketplaces, landing page, tighter keyword matching (UPC/EPID).
 - Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).

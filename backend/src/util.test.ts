@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanSeller } from "./util.js";
+import { cleanSeller, currencySymbol } from "./util.js";
 
 test("cleanSeller strips bracketed suffixes", () => {
   assert.equal(cleanSeller("RichMondHS [S/N Recorded]"), "RichMondHS");
@@ -17,4 +17,12 @@ test("cleanSeller falls back gracefully", () => {
   assert.equal(cleanSeller(undefined), "Unknown seller");
   assert.equal(cleanSeller("[only brackets]"), "[only brackets]");
   assert.equal(cleanSeller("PlainName"), "PlainName");
+});
+
+test("currencySymbol maps codes, falls back to $", () => {
+  assert.equal(currencySymbol("USD"), "$");
+  assert.equal(currencySymbol("GBP"), "£");
+  assert.equal(currencySymbol("EUR"), "€");
+  assert.equal(currencySymbol(undefined), "$");
+  assert.equal(currencySymbol("XYZ"), "$");
 });

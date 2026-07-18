@@ -84,8 +84,8 @@ flowchart LR
 |--------|-------------------|---------------------|------------|-----------------------------------------------------|
 | `POST` | `/amazon`         | x402                | 0.4 USDT   | Competitor-price advice for an Amazon listing (Buy Box). |
 | `POST` | `/ebay`           | x402                | 0.4 USDT   | Competitor-price advice for an eBay search (keyword). |
-| `POST` | `/preview/amazon` | free (rate-limited) | —          | Same schema as `/amazon`, no payment — demos / studio. |
-| `POST` | `/preview/ebay`   | free (rate-limited) | —          | Same schema as `/ebay`, no payment — demos / studio.   |
+| `POST` | `/walmart`        | x402                | 0.4 USDT   | Competitor-price advice for a Walmart search (keyword). |
+| `POST` | `/preview/{marketplace}` | free (rate-limited) | —   | Same schema, no payment — demos / studio. (`amazon` · `ebay` · `walmart`) |
 | `GET`  | `/quote`          | free                | —          | Pricing, pay-to address, and x402 status.           |
 | `GET`  | `/health`         | free                | —          | Liveness + config echo.                             |
 
@@ -106,12 +106,12 @@ Every marketplace returns the **same** result shape — only the input and the `
 
 \* Provide `product_url` **or** `asin`.
 
-`/ebay` — eBay has no shared listing, so competitors are found by keyword:
+`/ebay` and `/walmart` — no shared listing, so competitors are found by keyword:
 
 | Field      | Type   | Required | Notes                                              |
 |------------|--------|----------|----------------------------------------------------|
 | `query`    | string | yes      | Product search keyword. Be specific for a tight match. |
-| `my_price` | number | no       | Your current price — also anchors eBay relevance (drops off-band accessory listings). |
+| `my_price` | number | no       | Your current price — also anchors relevance (drops off-band accessory listings). |
 | `my_cost`  | number | no       | Your unit cost — unlocks `Margin Floor`.           |
 
 ## Example
@@ -180,11 +180,12 @@ Deterministic failures (missing / malformed input) are rejected with `400` **bef
 
 - Offers come from **Apify** ready-made actors — no self-hosted browser, no CAPTCHA wrangling:
   Amazon via [`axesso_data/amazon-product-offers-scraper`](https://apify.com/axesso_data/amazon-product-offers-scraper),
-  eBay via [`automation-lab/ebay-scraper`](https://apify.com/automation-lab/ebay-scraper).
+  eBay via [`automation-lab/ebay-scraper`](https://apify.com/automation-lab/ebay-scraper),
+  Walmart via [`pear_fight/walmart-scraper`](https://apify.com/pear_fight/walmart-scraper).
 - **Amazon Buy Box is approximated** by the lowest landed New offer. Amazon's real algorithm also
   weighs Prime, seller rating, fulfillment, and stock — stated in every `evidence` block.
-- **eBay is keyword-based** (no Buy Box). The search can surface related or accessory listings, so a
-  specific `query` matters — also stated in the `evidence` caveat.
+- **eBay & Walmart are keyword-based** (no Buy Box). The search can surface related or accessory
+  listings, so a specific `query` (and `my_price` to anchor relevance) matters — stated in the caveat.
 - A 10-minute TTL cache keeps repeat checks instant and cuts upstream cost.
 
 ## Quick start
@@ -215,6 +216,8 @@ Scripts: `npm run dev` · `npm run build` · `npm start` · `npm test` · `npm r
 | `APIFY_AMAZON_ACTOR` | Actor id. Default `axesso_data~amazon-product-offers-scraper`.   |
 | `APIFY_EBAY_ACTOR`   | Actor id. Default `automation-lab~ebay-scraper`.                 |
 | `EBAY_MAX_ITEMS`     | Max eBay listings per query. Default `20`.                       |
+| `APIFY_WALMART_ACTOR`| Actor id. Default `pear_fight~walmart-scraper`.                  |
+| `WALMART_MAX_ITEMS`  | Max Walmart listings per query. Default `20`.                    |
 | `X402_MODE`          | `off` · `demo` · `on`. `off` disables the payment gate.          |
 | `X402_PAY_TO`        | Your X Layer wallet (receives USDT0). Required when the gate is on. |
 | `X402_PRICE_USD`     | Price per paid call. Default `0.4`.                              |
@@ -227,7 +230,8 @@ Scripts: `npm run dev` · `npm run build` · `npm start` · `npm test` · `npm r
 
 - [x] Amazon (`/amazon`) — Buy Box logic.
 - [x] eBay (`/ebay`) — keyword-based competitor listings.
-- [ ] Walmart, AliExpress — global marketplaces.
+- [x] Walmart (`/walmart`) — keyword-based competitor listings.
+- [ ] AliExpress — global marketplace.
 - [ ] Shopee, Lazada, Tokopedia — SEA (keyword-based; no Buy Box).
 - [ ] Optional share card for a human-facing "you're winning / losing" summary.
 
@@ -246,7 +250,9 @@ competitor-price-checker/
         ├── x402.ts       path-based x402 gate + 402 challenge
         ├── amazon.ts     adapter: URL→ASIN, Apify fetch, normalize (Buy Box)
         ├── ebay.ts       adapter: keyword → Apify eBay search, normalize
+        ├── walmart.ts    adapter: keyword → Apify Walmart search, normalize
         ├── strategy.ts   marketplace-agnostic strategy engine
+        ├── util.ts       seller cleanup, relevance filter, currency
         ├── cache.ts      tiny TTL cache
         ├── config.ts     env + X Layer constants
         └── types.ts      shared shapes
