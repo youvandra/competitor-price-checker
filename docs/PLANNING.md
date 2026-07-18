@@ -171,7 +171,9 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
 - [ ] Deploy public HTTPS + domain (*.my.id / *.web.id pattern).
 - [ ] Register ASP on OKX.AI (endpoint + description + pricing).
 - [ ] Demo <90s + X post with #OKXAI. Google form by Jul 27.
-- [ ] Optional: README, unit tests (strategy math), sanitize messy seller names, more marketplaces.
+- [x] README (banner + logo + badges + mermaid + tables) + MIT license. Pushed, renders on GitHub.
+- [ ] Optional: unit tests (strategy math), sanitize messy seller names, more marketplaces.
+- Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).
 - [ ] Confirm service pricing 0.4 USDT wiring in x402 (reuse txwrap/bored-comic x402.ts).
