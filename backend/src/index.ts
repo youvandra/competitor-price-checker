@@ -1,12 +1,26 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import { config } from "./config.js";
 import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
+import { fetchEbayOffers } from "./ebay.js";
 import { buildAdvice } from "./strategy.js";
 import { paidRoute, x402Info } from "./x402.js";
 import type { CheckInput } from "./types.js";
 
 const app = express();
 app.use(express.json());
+
+const AMAZON_META = {
+  leaderLabel: "Buy Box",
+  source: "Apify axesso amazon-product-offers-scraper",
+  caveat:
+    "Buy Box is approximated by the lowest landed New offer. Amazon's real Buy Box also weighs Prime, seller rating, fulfillment and stock — price alone is not decisive.",
+};
+const EBAY_META = {
+  leaderLabel: "lowest listing",
+  source: "Apify automation-lab ebay-scraper",
+  caveat:
+    "eBay has no Buy Box — the leader is the cheapest New Buy-It-Now listing for your query. Keyword search can surface related or accessory listings, so refine the query for a tighter product match.",
+};
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -87,6 +101,80 @@ async function runAmazon(req: Request, res: Response): Promise<void> {
       offers: data.offers,
       totalOffers: data.totalOffers,
       fromCache,
+      leaderLabel: AMAZON_META.leaderLabel,
+      source: AMAZON_META.source,
+      caveat: AMAZON_META.caveat,
+      myPrice,
+      myCost,
+    });
+    res.json(advice);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(502).json({ error: `upstream fetch failed: ${msg}` });
+  }
+}
+
+// ---- eBay (keyword-based) --------------------------------------------------
+
+interface ParsedEbay {
+  query: string;
+  myPrice?: number;
+  myCost?: number;
+}
+
+function parseEbayBody(
+  body: unknown
+): { ok: true; value: ParsedEbay } | { ok: false; error: string } {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const query = typeof b.query === "string" ? b.query.trim() : "";
+  if (!query || query.length < 2) {
+    return { ok: false, error: "provide `query` — a product search keyword (min 2 chars)" };
+  }
+  const myPrice = b.my_price != null ? Number(b.my_price) : undefined;
+  if (myPrice != null && !Number.isFinite(myPrice)) {
+    return { ok: false, error: "`my_price` must be a number" };
+  }
+  const myCost = b.my_cost != null ? Number(b.my_cost) : undefined;
+  if (myCost != null && !Number.isFinite(myCost)) {
+    return { ok: false, error: "`my_cost` must be a number" };
+  }
+  return { ok: true, value: { query, myPrice, myCost } };
+}
+
+function preflightEbay(req: Request, res: Response, next: NextFunction): void {
+  const b = (req.body ?? {}) as Record<string, unknown>;
+  if (typeof b.query !== "string") return next(); // probe -> let x402 issue 402
+  const parsed = parseEbayBody(req.body);
+  if (!parsed.ok) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  (res.locals as { ebay?: ParsedEbay }).ebay = parsed.value;
+  next();
+}
+
+async function runEbay(req: Request, res: Response): Promise<void> {
+  const cached = (res.locals as { ebay?: ParsedEbay }).ebay;
+  const parsed = cached
+    ? { ok: true as const, value: cached }
+    : parseEbayBody(req.body);
+  if (!parsed.ok) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  const { query, myPrice, myCost } = parsed.value;
+  try {
+    const { data, fromCache } = await fetchEbayOffers(query);
+    const advice = buildAdvice({
+      marketplace: "ebay.com",
+      productId: query,
+      currency: data.currency,
+      offers: data.offers,
+      totalOffers: data.totalOffers,
+      fromCache,
+      leaderLabel: EBAY_META.leaderLabel,
+      source: EBAY_META.source,
+      caveat: EBAY_META.caveat,
       myPrice,
       myCost,
     });
@@ -117,6 +205,15 @@ app.post(
   preflightAmazon,
   paidRoute("POST /amazon", "Amazon competitor-price advice (Buy Box strategy)"),
   runAmazon
+);
+
+// eBay (keyword-based competitor pricing).
+app.post("/preview/ebay", previewLimiter, runEbay);
+app.post(
+  "/ebay",
+  preflightEbay,
+  paidRoute("POST /ebay", "eBay competitor-price advice (keyword listings)"),
+  runEbay
 );
 
 // ---- naive per-IP rate limit for the free preview --------------------------

@@ -172,7 +172,11 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
 - [ ] Register ASP on OKX.AI (endpoint + description + pricing).
 - [ ] Demo <90s + X post with #OKXAI. Google form by Jul 27.
 - [x] README (banner + logo + badges + mermaid + tables) + MIT license. Pushed, renders on GitHub.
-- [ ] Optional: unit tests (strategy math), sanitize messy seller names, more marketplaces.
+- [x] eBay service (`/ebay`, `/preview/ebay`) — keyword-based, actor `automation-lab~ebay-scraper`
+      (~9s, pay-per-event). Generalized strategy engine (buyBox -> leader + leaderLabel). Amazon = "Buy Box",
+      eBay = "lowest listing". Uniform output shape across both. Typecheck clean, tested end-to-end.
+      NOTE: eBay keyword search surfaces accessories/related items — disclosed in evidence caveat.
+- [ ] Optional: unit tests (strategy math), sanitize messy seller names, Walmart/AliExpress, tighter eBay match.
 - Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).

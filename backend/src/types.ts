@@ -19,14 +19,16 @@ export interface NormalizedOffer {
 
 export interface MarketStats {
   currency: string;
-  offerCount: number; // New offers considered
-  totalOffers: number; // all offers returned (incl. used)
+  offerCount: number; // New offers/listings considered
+  totalOffers: number; // all offers/listings returned (incl. non-New)
   lowest: number; // lowest landed (New)
   highest: number; // highest landed (New)
   median: number; // median landed (New)
-  /** Buy Box proxy = lowest landed New offer (Amazon's real algo weighs more). */
-  buyBoxPrice: number;
-  buyBoxSeller: string;
+  /** The price to beat = lowest landed New offer/listing. */
+  leaderPrice: number;
+  leaderSeller: string;
+  /** What the leader represents on this marketplace: "Buy Box" | "lowest listing". */
+  leaderLabel: string;
   /** Where the caller's own price sits. Null if my_price not given. */
   yourPosition: string | null;
 }

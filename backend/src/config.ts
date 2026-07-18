@@ -8,6 +8,8 @@ export const config = {
   apifyToken: process.env.APIFY_TOKEN || "",
   apifyAmazonActor:
     process.env.APIFY_AMAZON_ACTOR || "axesso_data~amazon-product-offers-scraper",
+  apifyEbayActor: process.env.APIFY_EBAY_ACTOR || "automation-lab~ebay-scraper",
+  ebayMaxItems: parseInt(process.env.EBAY_MAX_ITEMS || "20", 10),
 
   // x402 / X Layer
   x402Mode: process.env.X402_MODE || "off", // off | demo | on
