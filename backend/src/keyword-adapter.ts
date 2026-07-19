@@ -52,8 +52,21 @@ export function makeKeywordAdapter<Row>(
       cfg.buildBody(query),
       config.apifyTimeoutMs,
       `${cfg.label} data source`
-    )) as Row[];
-    const data = cfg.mapRows(Array.isArray(raw) ? raw : []);
+    )) as unknown;
+    const rows = (Array.isArray(raw) ? raw : []) as Row[];
+
+    // Some actors return a single error-wrapper row (e.g. an anti-bot "blocked
+    // wall") instead of listings. Surface it as a failure rather than silently
+    // reporting "no competitors found".
+    if (
+      rows.length > 0 &&
+      rows.every((r) => r && typeof r === "object" && "error" in (r as object))
+    ) {
+      const first = rows[0] as { error?: unknown };
+      throw new Error(`${cfg.label} upstream returned an error: ${String(first.error)}`);
+    }
+
+    const data = cfg.mapRows(rows);
     cache.set(key, data);
     return { data, fromCache: false };
   };
