@@ -17,6 +17,15 @@ export const config = {
   aliexpressMaxItems: parseInt(process.env.ALIEXPRESS_MAX_ITEMS || "20", 10),
   apifyEtsyActor: process.env.APIFY_ETSY_ACTOR || "automation-lab~etsy-scraper",
   etsyMaxItems: parseInt(process.env.ETSY_MAX_ITEMS || "20", 10),
+  apifyTargetActor: process.env.APIFY_TARGET_ACTOR || "epctex~target-scraper",
+  targetMaxItems: parseInt(process.env.TARGET_MAX_ITEMS || "20", 10),
+  apifyBestBuyActor: process.env.APIFY_BESTBUY_ACTOR || "epctex~bestbuy-scraper",
+  bestBuyMaxItems: parseInt(process.env.BESTBUY_MAX_ITEMS || "20", 10),
+  apifyMercadoLibreActor:
+    process.env.APIFY_MERCADOLIBRE_ACTOR || "epctex~mercadolibre-scraper",
+  mercadoLibreMaxItems: parseInt(process.env.MERCADOLIBRE_MAX_ITEMS || "20", 10),
+  apifyShopeeActor: process.env.APIFY_SHOPEE_ACTOR || "epctex~shopee-scraper",
+  shopeeMaxItems: parseInt(process.env.SHOPEE_MAX_ITEMS || "20", 10),
 
   // x402 / X Layer
   x402Mode: process.env.X402_MODE || "off", // off | demo | on

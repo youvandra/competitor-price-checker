@@ -3,6 +3,10 @@ import { fetchEbayOffers } from "./ebay.js";
 import { fetchWalmartOffers } from "./walmart.js";
 import { fetchAliexpressOffers } from "./aliexpress.js";
 import { fetchEtsyOffers } from "./etsy.js";
+import { fetchTargetOffers } from "./target.js";
+import { fetchBestBuyOffers } from "./bestbuy.js";
+import { fetchMercadoLibreOffers } from "./mercadolibre.js";
+import { fetchShopeeOffers } from "./shopee.js";
 import { relevanceFilter, toUsd, isNonUsd } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
@@ -145,6 +149,10 @@ export async function runBestPrice(input: BestPriceInput): Promise<BestPrice> {
     ["walmart.com", fetchWalmartOffers],
     ["aliexpress.com", fetchAliexpressOffers],
     ["etsy.com", fetchEtsyOffers],
+    ["target.com", fetchTargetOffers],
+    ["bestbuy.com", fetchBestBuyOffers],
+    ["mercadolibre.com", fetchMercadoLibreOffers],
+    ["shopee.com", fetchShopeeOffers],
   ];
 
   const jobs: Promise<MarketEntry>[] = keyword.map(([marketplace, fetchFn]) =>

@@ -38,13 +38,29 @@ export function relevanceFilter(
 
 /** Map a currency code to a short symbol, falling back to $. */
 export function currencySymbol(code: string | undefined): string {
-  const map: Record<string, string> = { USD: "$", GBP: "£", EUR: "€" };
+  const map: Record<string, string> = {
+    USD: "$",
+    GBP: "£",
+    EUR: "€",
+    BRL: "R$", // Mercado Libre (Brazil)
+    MXN: "Mex$", // Mercado Libre (Mexico)
+    SGD: "S$", // Shopee (Singapore)
+    IDR: "Rp", // Shopee (Indonesia)
+  };
   return (code && map[code]) || "$";
 }
 
 // Approximate FX to USD, keyed by currency symbol. Static + disclosed — enough
 // to rank marketplaces against each other, not a settlement-grade rate.
-const USD_PER_SYMBOL: Record<string, number> = { "$": 1, "€": 1.08, "£": 1.27 };
+const USD_PER_SYMBOL: Record<string, number> = {
+  "$": 1,
+  "€": 1.08,
+  "£": 1.27,
+  "R$": 0.18,
+  "Mex$": 0.054,
+  "S$": 0.74,
+  "Rp": 0.000061,
+};
 
 /** Convert an amount in a symbol's currency to approximate USD. */
 export function toUsd(amount: number, symbol: string): number {
