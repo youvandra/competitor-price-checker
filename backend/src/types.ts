@@ -56,6 +56,8 @@ export interface Advice {
   strategies: Strategy[];
   recommendation: Strategy["name"];
   evidence: Evidence;
+  /** Composable follow-up hints so a calling agent can continue the flow. */
+  nextActions: string[];
 }
 
 export interface CheckInput {

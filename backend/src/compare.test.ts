@@ -31,6 +31,9 @@ test("aggregateBestPrice ranks by USD, picks cheapest, computes savings", () => 
     r.results.map((e) => e.marketplace),
     ["aliexpress.com", "walmart.com", "ebay.com", "etsy.com", "amazon.com"]
   );
+  // agent-flow hints: point to the cheapest marketplace + flag the failed one
+  assert.ok(r.nextActions.some((h) => /POST \/aliexpress/.test(h)));
+  assert.ok(r.nextActions.some((h) => /didn't respond/.test(h))); // amazon errored
 });
 
 test("aggregateBestPrice handles no offers anywhere", () => {

@@ -193,6 +193,11 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
       resilient per-marketplace status), USD ranking via static FX (disclosed), priced higher at
       **1.5 USDT** (per-route x402 price override). Pure aggregator unit-tested. 26 tests total.
       Live-verified: 5 marketplaces scanned in ~25s, cheapest picked, savings computed.
+- [x] DEPLOYED to VPS (pm2 `competitor-price-checker`, port 3006, X402_MODE=demo). Live + externally
+      reachable, full flow + 402 verified. Redeploy: git pull && npm i && npm run build && pm2 restart.
+- [x] RELIABILITY: fetchJson retries transient failures (network/429/5xx) with backoff (not timeouts/4xx).
+- [x] AGENT FLOW: every advice + Best Price Scan returns `nextActions` — composable follow-up hints
+      (pass my_price/my_cost, call /best-price, call the cheapest marketplace, retry failed ones).
 - [ ] Optional: SEA marketplaces (Shopee/Tokopedia/Lazada), tighter keyword matching (UPC/EPID).
 - [x] POLISH PASS: (1) Apify calls now have a hard timeout (fetchJson + APIFY_TIMEOUT_MS=75s) so a
       hung upstream fails cleanly. (2) Every adapter's normalization extracted to a pure exported

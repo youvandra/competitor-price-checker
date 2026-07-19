@@ -57,16 +57,14 @@ export function isNonUsd(symbol: string): boolean {
   return symbol !== "$" && symbol in USD_PER_SYMBOL;
 }
 
-/**
- * POST JSON and parse the JSON response, with a hard timeout so a hung upstream
- * (e.g. a slow Apify run) fails cleanly instead of holding the request open.
- */
-export async function fetchJson(
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function postJsonOnce(
   url: string,
   body: unknown,
   timeoutMs: number,
   label: string
-): Promise<unknown> {
+): Promise<{ ok: true; data: unknown } | { ok: false; status?: number; err: Error }> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -76,16 +74,49 @@ export async function fetchJson(
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
-    if (!res.ok) throw new Error(`${label} failed: HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new Error(`${label} timed out after ${timeoutMs}ms`);
+    if (!res.ok) {
+      return { ok: false, status: res.status, err: new Error(`${label} failed: HTTP ${res.status}`) };
     }
-    throw err;
+    return { ok: true, data: await res.json() };
+  } catch (err) {
+    const e =
+      err instanceof Error && err.name === "AbortError"
+        ? new Error(`${label} timed out after ${timeoutMs}ms`)
+        : err instanceof Error
+          ? err
+          : new Error(String(err));
+    return { ok: false, err: e };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * POST JSON and parse the JSON response, with a hard timeout so a hung upstream
+ * fails cleanly. Retries transient failures (network errors, HTTP 429/5xx) with
+ * backoff; does NOT retry timeouts (already waited long) or 4xx (deterministic).
+ */
+export async function fetchJson(
+  url: string,
+  body: unknown,
+  timeoutMs: number,
+  label: string,
+  retries = 1
+): Promise<unknown> {
+  let last: Error = new Error(`${label} failed`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const r = await postJsonOnce(url, body, timeoutMs, label);
+    if (r.ok) return r.data;
+    last = r.err;
+    const isTimeout = /timed out/.test(r.err.message);
+    const transient = r.status === undefined || r.status === 429 || r.status >= 500;
+    if (attempt < retries && transient && !isTimeout) {
+      await sleep(400 * 2 ** attempt + Math.floor(Math.random() * 150));
+      continue;
+    }
+    break;
+  }
+  throw last;
 }
 
 /** Parse a free-text shipping label into a number; "free" -> 0. */

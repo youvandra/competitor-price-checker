@@ -54,6 +54,8 @@ agent can reason about, not a black box.
 - **Four strategies, not one number** — `Win`, `Match`, `Premium Hold`, `Margin Floor`, each with a price,
   a rationale, and (if you pass your cost) the resulting margin. The agent picks; we recommend a default.
 - **Honest evidence** — data source, how many offers were analyzed, cache status, and an explicit caveat.
+- **Next actions** — composable follow-up hints (`nextActions`) so a calling agent can keep the flow
+  going: pass `my_price`/`my_cost` for a sharper answer, or run a Best Price Scan across marketplaces.
 
 ## Architecture
 
@@ -222,6 +224,8 @@ Deterministic failures (missing / malformed input) are rejected with `400` **bef
   the caveat. AliExpress prices are in the store's local currency; Etsy items are often unique/handmade,
   so "competitors" are comparable listings rather than the same item.
 - A 10-minute TTL cache keeps repeat checks instant and cuts upstream cost.
+- Upstream calls have a hard timeout and retry transient failures (network / 429 / 5xx) with backoff;
+  the Best Price Scan degrades gracefully — a marketplace that still fails is reported, not fatal.
 
 ## Quick start
 

@@ -35,6 +35,8 @@ export interface BestPrice {
     fxNote: string;
     caveat: string;
   };
+  /** Composable follow-up hints so a calling agent can continue the flow. */
+  nextActions: string[];
 }
 
 function leaderOf(offers: NormalizedOffer[]): NormalizedOffer | null {
@@ -75,6 +77,19 @@ export function aggregateBestPrice(
   }
 
   const anyConverted = withOffers.some((e) => e.converted);
+  const anyFailed = entries.some((e) => e.status === "error");
+
+  const nextActions: string[] = [];
+  if (top) {
+    const short = top.marketplace.replace(/\.(com|co\.uk|de)$/, "");
+    nextActions.push(
+      `Call POST /${short} for the full 4-strategy pricing breakdown on ${short} (the cheapest).`
+    );
+  }
+  if (typeof myPrice !== "number")
+    nextActions.push("Pass `my_price` to see how far above the best price you are.");
+  if (anyFailed)
+    nextActions.push("Some marketplaces didn't respond — retry to include them.");
 
   return {
     summary: buildSummary(cheapest, withOffers.length, myPrice, savingsVsCheapestUsd),
@@ -92,6 +107,7 @@ export function aggregateBestPrice(
       caveat:
         "Keyword marketplaces match by search, so listings may not be the identical item; Amazon is matched by ASIN. Compare the linked listings before acting.",
     },
+    nextActions,
   };
 }
 

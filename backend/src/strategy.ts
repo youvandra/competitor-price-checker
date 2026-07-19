@@ -143,7 +143,27 @@ export function buildAdvice(args: BuildAdviceArgs): Advice {
       fromCache,
       caveat,
     },
+    nextActions: buildNextActions(offers.length, myPrice, myCost),
   };
+}
+
+/** Follow-up hints so a calling agent can keep the flow going. */
+function buildNextActions(
+  offerCount: number,
+  myPrice?: number,
+  myCost?: number
+): string[] {
+  const hints: string[] = [];
+  if (offerCount === 0) {
+    hints.push("No competitors found — you're uncontested; hold or set your own price.");
+  } else {
+    if (typeof myPrice !== "number")
+      hints.push("Pass `my_price` to see your position and get a tailored recommendation.");
+    if (typeof myCost !== "number")
+      hints.push("Pass `my_cost` to unlock the Margin Floor guard (never price below cost).");
+  }
+  hints.push("Call POST /best-price to compare this product across every marketplace in one call.");
+  return hints;
 }
 
 function pickRecommendation(

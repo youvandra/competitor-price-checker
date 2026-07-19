@@ -63,3 +63,12 @@ test("margin computed from cost", () => {
   const a = buildAdvice(base({ myPrice: 24, myCost: 15 }));
   assert.equal(a.strategies.find((s) => s.name === "Win")?.margin, 4.99);
 });
+
+test("nextActions guide the agent's follow-up", () => {
+  const noPrice = buildAdvice(base({}));
+  assert.ok(noPrice.nextActions.some((h) => /my_price/.test(h)));
+  assert.ok(noPrice.nextActions.some((h) => /best-price/.test(h)));
+  const full = buildAdvice(base({ myPrice: 24, myCost: 15 }));
+  assert.ok(!full.nextActions.some((h) => /my_price/.test(h))); // already provided
+  assert.ok(full.nextActions.some((h) => /best-price/.test(h)));
+});
