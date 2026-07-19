@@ -190,7 +190,10 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
 - [x] Etsy service (`/etsy`, `/preview/etsy`) — keyword-based, actor `automation-lab~etsy-scraper`
       (~10-12s, PPE). Wired via keyword factory. price is a string (parsed). 5 marketplaces live.
 - [ ] Optional: SEA marketplaces (Shopee/Tokopedia/Lazada), tighter keyword matching (UPC/EPID).
-- [ ] POLISH PHASE next (per user): review + tighten before more marketplaces.
+- [x] POLISH PASS: (1) Apify calls now have a hard timeout (fetchJson + APIFY_TIMEOUT_MS=75s) so a
+      hung upstream fails cleanly. (2) Every adapter's normalization extracted to a pure exported
+      mapper (mapEbayRows/mapWalmartRows/mapAliexpressRows/mapEtsyRows/normalizeAmazonOffers) with
+      unit tests — 23 tests total, all green. Landing verified rendering 5 marketplaces.
 - Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).

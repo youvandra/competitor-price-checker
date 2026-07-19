@@ -42,6 +42,37 @@ export function currencySymbol(code: string | undefined): string {
   return (code && map[code]) || "$";
 }
 
+/**
+ * POST JSON and parse the JSON response, with a hard timeout so a hung upstream
+ * (e.g. a slow Apify run) fails cleanly instead of holding the request open.
+ */
+export async function fetchJson(
+  url: string,
+  body: unknown,
+  timeoutMs: number,
+  label: string
+): Promise<unknown> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error(`${label} failed: HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`${label} timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Parse a free-text shipping label into a number; "free" -> 0. */
 export function parseShipping(s: string | undefined): number {
   if (!s) return 0;

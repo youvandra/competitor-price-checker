@@ -1,5 +1,6 @@
 import { config } from "./config.js";
 import { TtlCache } from "./cache.js";
+import { fetchJson } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 // Shared plumbing for keyword-based marketplace adapters (eBay, Walmart,
@@ -46,14 +47,12 @@ export function makeKeywordAdapter<Row>(
       `https://api.apify.com/v2/acts/${cfg.getActor()}` +
       `/run-sync-get-dataset-items?token=${config.apifyToken}`;
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cfg.buildBody(query)),
-    });
-    if (!res.ok) throw new Error(`Apify ${cfg.label} actor failed: HTTP ${res.status}`);
-
-    const raw = (await res.json()) as Row[];
+    const raw = (await fetchJson(
+      url,
+      cfg.buildBody(query),
+      config.apifyTimeoutMs,
+      `Apify ${cfg.label} actor`
+    )) as Row[];
     const data = cfg.mapRows(Array.isArray(raw) ? raw : []);
     cache.set(key, data);
     return { data, fromCache: false };

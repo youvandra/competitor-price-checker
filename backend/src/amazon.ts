@@ -1,6 +1,6 @@
 import { config } from "./config.js";
 import { TtlCache } from "./cache.js";
-import { cleanSeller } from "./util.js";
+import { cleanSeller, fetchJson } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 // Amazon adapter: URL -> ASIN, Apify offers scraper -> NormalizedOffer[].
@@ -30,8 +30,7 @@ export function domainFromUrl(input: string): string | null {
 }
 
 // Raw offer object shape from the axesso actor (only fields we read).
-interface RawOffer {
-  asin?: string;
+export interface RawAmazonOffer {
   condition?: string;
   price?: number;
   shippingPrice?: number;
@@ -40,13 +39,37 @@ interface RawOffer {
   sellerRating?: string;
   prime?: boolean;
   currencyCode?: string;
-  statusCode?: number;
 }
 
 export interface AmazonFetch {
   offers: NormalizedOffer[];
   currency: string;
   totalOffers: number;
+}
+
+/**
+ * Normalize raw Amazon offers. New-condition only (Used offers are not Buy Box
+ * rivals). Landed = price + shipping.
+ */
+export function normalizeAmazonOffers(rows: RawAmazonOffer[]): AmazonFetch {
+  const offers: NormalizedOffer[] = rows
+    .filter((o) => typeof o.price === "number" && (o.condition ?? "").toLowerCase().startsWith("new"))
+    .map((o) => {
+      const price = o.price as number;
+      const shipping = typeof o.shippingPrice === "number" ? o.shippingPrice : 0;
+      return {
+        sellerName: cleanSeller(o.sellerName),
+        sellerId: o.sellerId,
+        price,
+        shipping,
+        landed: Math.round((price + shipping) * 100) / 100,
+        condition: o.condition || "New",
+        prime: Boolean(o.prime),
+        sellerRating: o.sellerRating,
+      };
+    });
+  const currency = rows.find((o) => o.currencyCode)?.currencyCode || "$";
+  return { offers, currency, totalOffers: rows.length };
 }
 
 const cache = new TtlCache<AmazonFetch>(config.offersCacheTtlMs);
@@ -69,39 +92,14 @@ export async function fetchAmazonOffers(
     `https://api.apify.com/v2/acts/${config.apifyAmazonActor}` +
     `/run-sync-get-dataset-items?token=${config.apifyToken}`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input: [{ asin, domain, startPage: 1 }] }),
-  });
+  const raw = (await fetchJson(
+    url,
+    { input: [{ asin, domain, startPage: 1 }] },
+    config.apifyTimeoutMs,
+    "Apify Amazon actor"
+  )) as RawAmazonOffer[];
 
-  if (!res.ok) {
-    throw new Error(`Apify actor failed: HTTP ${res.status}`);
-  }
-
-  const raw = (await res.json()) as RawOffer[];
-  const rows = Array.isArray(raw) ? raw : [];
-  const totalOffers = rows.length;
-
-  const offers: NormalizedOffer[] = rows
-    .filter((o) => typeof o.price === "number" && (o.condition ?? "").toLowerCase().startsWith("new"))
-    .map((o) => {
-      const price = o.price as number;
-      const shipping = typeof o.shippingPrice === "number" ? o.shippingPrice : 0;
-      return {
-        sellerName: cleanSeller(o.sellerName),
-        sellerId: o.sellerId,
-        price,
-        shipping,
-        landed: Math.round((price + shipping) * 100) / 100,
-        condition: o.condition || "New",
-        prime: Boolean(o.prime),
-        sellerRating: o.sellerRating,
-      };
-    });
-
-  const currency = rows.find((o) => o.currencyCode)?.currencyCode || "$";
-  const data: AmazonFetch = { offers, currency, totalOffers };
+  const data = normalizeAmazonOffers(Array.isArray(raw) ? raw : []);
   cache.set(key, data);
   return { data, fromCache: false };
 }

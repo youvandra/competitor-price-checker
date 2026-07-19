@@ -29,6 +29,8 @@ export const config = {
   // tuning
   offersCacheTtlMs: parseInt(process.env.OFFERS_CACHE_TTL_MS || "600000", 10),
   undercutStep: Number(process.env.UNDERCUT_STEP || "0.01"),
+  // Max time to wait on an Apify run-sync call before giving up (ms).
+  apifyTimeoutMs: parseInt(process.env.APIFY_TIMEOUT_MS || "75000", 10),
 };
 
 // Fixed X Layer constants (same across all OKX A2MCP services).
