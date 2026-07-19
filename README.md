@@ -197,8 +197,8 @@ npm install
 npm run dev               # starts on PORT (default 3002)
 ```
 
-Open **http://localhost:3002** for the landing page + a live demo (Amazon / eBay / Walmart tabs,
-free `preview` calls). Or hit the API directly:
+Open **http://localhost:3002** for the landing page (product overview + a single "Try this on OKX"
+CTA). Hit the API directly to see a result:
 
 ```bash
 curl -s -X POST http://localhost:3002/preview/amazon \
@@ -248,7 +248,7 @@ competitor-price-checker/
 ├── docs/
 │   └── PLANNING.md       decisions log + architecture notes
 └── backend/
-    ├── public/           landing page + live demo (index.html, Logo.png)
+    ├── public/           landing page (index.html, Logo.png)
     └── src/
         ├── index.ts      Express app: static, routes, preflight, rate limit
         ├── x402.ts       path-based x402 gate + 402 challenge
