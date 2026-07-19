@@ -64,14 +64,14 @@ one uniform output shape.
 
 ```mermaid
 flowchart LR
-    A[Agent] -->|POST /amazon + x402| G{x402 gate}
+    A[Agent] -->|POST /marketplace + x402| G{x402 gate}
     G -->|unpaid| C402[["402 challenge"]]
     C402 --> A
     G -->|paid| P{preflight}
     P -->|bad input| E400[["400 — before payment"]]
     E400 --> A
-    P -->|valid| AD[Amazon adapter]
-    AD -->|offers| APIFY[(Apify axesso scraper)]
+    P -->|valid| AD[Marketplace adapter]
+    AD -->|offers| PROVIDER[(live market data)]
     AD -->|10 min TTL| CACHE[(cache)]
     AD --> S[Strategy engine]
     S --> OUT[[Uniform JSON advice]]
@@ -142,12 +142,23 @@ curl -s -X POST https://<your-domain>/preview/amazon \
   ],
   "recommendation": "Win",
   "evidence": {
-    "source": "Apify axesso amazon-product-offers-scraper",
+    "source": "live Amazon offers",
     "marketplace": "amazon.com", "analyzedCount": 8, "fromCache": false,
     "caveat": "Buy Box is approximated by the lowest landed New offer. Amazon's real Buy Box also weighs Prime, seller rating, fulfillment and stock — price alone is not decisive."
   }
 }
 ```
+
+For the keyword marketplaces (`/ebay`, `/walmart`, `/aliexpress`, `/etsy`), send a `query` instead:
+
+```bash
+curl -s -X POST https://<your-domain>/preview/ebay \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"logitech mx master 3s wireless mouse","my_price":95,"my_cost":70}'
+```
+
+The response has the identical shape — only `market.leaderLabel` reads `"lowest listing"` instead of
+`"Buy Box"`, and `my_price` also anchors relevance to drop off-band accessory listings.
 
 ## Pricing strategies
 
@@ -180,12 +191,7 @@ Deterministic failures (missing / malformed input) are rejected with `400` **bef
 
 ## Data source & honesty
 
-- Offers come from **Apify** ready-made actors — no self-hosted browser, no CAPTCHA wrangling:
-  Amazon via [`axesso_data/amazon-product-offers-scraper`](https://apify.com/axesso_data/amazon-product-offers-scraper),
-  eBay via [`automation-lab/ebay-scraper`](https://apify.com/automation-lab/ebay-scraper),
-  Walmart via [`pear_fight/walmart-scraper`](https://apify.com/pear_fight/walmart-scraper),
-  AliExpress via [`kawsar/aliexpress-search-scraper`](https://apify.com/kawsar/aliexpress-search-scraper),
-  Etsy via [`automation-lab/etsy-scraper`](https://apify.com/automation-lab/etsy-scraper).
+- Offers come from a managed live-market data pipeline — no self-hosted browser, no CAPTCHA wrangling.
 - **Amazon Buy Box is approximated** by the lowest landed New offer. Amazon's real algorithm also
   weighs Prime, seller rating, fulfillment, and stock — stated in every `evidence` block.
 - **eBay, Walmart, AliExpress & Etsy are keyword-based** (no Buy Box). The search can surface related
@@ -263,11 +269,11 @@ competitor-price-checker/
     └── src/
         ├── index.ts      Express app: static, routes, preflight, rate limit
         ├── x402.ts       path-based x402 gate + 402 challenge
-        ├── amazon.ts     adapter: URL→ASIN, Apify fetch, normalize (Buy Box)
-        ├── ebay.ts       adapter: keyword → Apify eBay search, normalize
-        ├── walmart.ts    adapter: keyword → Apify Walmart search, normalize
-        ├── aliexpress.ts adapter: keyword → Apify AliExpress search, normalize
-        ├── etsy.ts       adapter: keyword → Apify Etsy search, normalize
+        ├── amazon.ts     adapter: URL→ASIN, fetch offers, normalize (Buy Box)
+        ├── ebay.ts       adapter: keyword → eBay listings, normalize
+        ├── walmart.ts    adapter: keyword → Walmart listings, normalize
+        ├── aliexpress.ts adapter: keyword → AliExpress listings, normalize
+        ├── etsy.ts       adapter: keyword → Etsy listings, normalize
         ├── strategy.ts   marketplace-agnostic strategy engine
         ├── util.ts       seller cleanup, relevance filter, currency
         ├── cache.ts      tiny TTL cache

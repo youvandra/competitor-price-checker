@@ -96,7 +96,7 @@ export async function fetchAmazonOffers(
     url,
     { input: [{ asin, domain, startPage: 1 }] },
     config.apifyTimeoutMs,
-    "Apify Amazon actor"
+    "Amazon data source"
   )) as RawAmazonOffer[];
 
   const data = normalizeAmazonOffers(Array.isArray(raw) ? raw : []);

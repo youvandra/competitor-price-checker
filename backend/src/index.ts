@@ -22,35 +22,35 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 
 const AMAZON_META = {
   leaderLabel: "Buy Box",
-  source: "Apify axesso amazon-product-offers-scraper",
+  source: "live Amazon offers",
   caveat:
     "Buy Box is approximated by the lowest landed New offer. Amazon's real Buy Box also weighs Prime, seller rating, fulfillment and stock — price alone is not decisive.",
 };
 const EBAY_META = {
   marketplace: "ebay.com",
   leaderLabel: "lowest listing",
-  source: "Apify automation-lab ebay-scraper",
+  source: "live eBay listings",
   caveat:
     "eBay has no Buy Box — the leader is the cheapest New Buy-It-Now listing for your query. Keyword search can surface related or accessory listings, so refine the query for a tighter product match.",
 };
 const WALMART_META = {
   marketplace: "walmart.com",
   leaderLabel: "lowest listing",
-  source: "Apify pear_fight walmart-scraper",
+  source: "live Walmart listings",
   caveat:
     "Walmart listings are matched by keyword (no shared Buy Box). Search can surface related items, so a specific query — plus my_price to anchor relevance — sharpens the match.",
 };
 const ALIEXPRESS_META = {
   marketplace: "aliexpress.com",
   leaderLabel: "lowest listing",
-  source: "Apify kawsar aliexpress-search-scraper",
+  source: "live AliExpress listings",
   caveat:
     "AliExpress listings are matched by keyword (no shared Buy Box). Prices are in the store's currency and can include heavy discounts; a specific query plus my_price to anchor relevance sharpens the match.",
 };
 const ETSY_META = {
   marketplace: "etsy.com",
   leaderLabel: "lowest listing",
-  source: "Apify automation-lab etsy-scraper",
+  source: "live Etsy listings",
   caveat:
     "Etsy listings are matched by keyword (no shared Buy Box) and are often unique/handmade, so 'competitors' are comparable listings, not the same item. Shipping is not included in the search figure. Use a specific query plus my_price to anchor relevance.",
 };
@@ -253,7 +253,7 @@ app.get("/quote", (_req, res) => {
 });
 
 // Free preview: same schema + logic, no payment. For demo / studio use.
-// NOTE: this still calls Apify (costs us ~$0.005). Cached 10min; rate-limited.
+// NOTE: this still hits the upstream data source (has a cost). Cached 10min; rate-limited.
 app.post("/preview/amazon", previewLimiter, runAmazon);
 
 // Paid service: preflight (reject bad input free) -> x402 gate -> run.

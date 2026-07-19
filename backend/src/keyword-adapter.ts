@@ -51,7 +51,7 @@ export function makeKeywordAdapter<Row>(
       url,
       cfg.buildBody(query),
       config.apifyTimeoutMs,
-      `Apify ${cfg.label} actor`
+      `${cfg.label} data source`
     )) as Row[];
     const data = cfg.mapRows(Array.isArray(raw) ? raw : []);
     cache.set(key, data);
