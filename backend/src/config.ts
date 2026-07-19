@@ -6,6 +6,7 @@ export const config = {
 
   // Apify
   apifyToken: process.env.APIFY_TOKEN || "",
+  apifyBackupToken: process.env.APIFY_BACKUP_TOKEN || "",
   apifyAmazonActor:
     process.env.APIFY_AMAZON_ACTOR || "axesso_data~amazon-product-offers-scraper",
   apifyEbayActor: process.env.APIFY_EBAY_ACTOR || "automation-lab~ebay-scraper",

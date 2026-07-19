@@ -1,6 +1,6 @@
 import { config } from "./config.js";
 import { TtlCache } from "./cache.js";
-import { cleanSeller, fetchJson } from "./util.js";
+import { apifyFetch, cleanSeller } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 // Amazon adapter: URL -> ASIN, Apify offers scraper -> NormalizedOffer[].
@@ -86,17 +86,11 @@ export async function fetchAmazonOffers(
   const cached = cache.get(key);
   if (cached) return { data: cached, fromCache: true };
 
-  if (!config.apifyToken) throw new Error("APIFY_TOKEN not configured");
-
-  const url =
-    `https://api.apify.com/v2/acts/${config.apifyAmazonActor}` +
-    `/run-sync-get-dataset-items?token=${config.apifyToken}`;
-
-  const raw = (await fetchJson(
-    url,
+  const raw = (await apifyFetch(
+    config.apifyAmazonActor,
     { input: [{ asin, domain, startPage: 1 }] },
     config.apifyTimeoutMs,
-    "Amazon data source"
+    "Amazon data source",
   )) as RawAmazonOffer[];
 
   const data = normalizeAmazonOffers(Array.isArray(raw) ? raw : []);

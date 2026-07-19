@@ -1,6 +1,6 @@
 import { config } from "./config.js";
 import { TtlCache } from "./cache.js";
-import { fetchJson } from "./util.js";
+import { apifyFetch } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 // Shared plumbing for keyword-based marketplace adapters (eBay, Walmart,
@@ -41,17 +41,11 @@ export function makeKeywordAdapter<Row>(
     const cached = cache.get(key);
     if (cached) return { data: cached, fromCache: true };
 
-    if (!config.apifyToken) throw new Error("APIFY_TOKEN not configured");
-
-    const url =
-      `https://api.apify.com/v2/acts/${cfg.getActor()}` +
-      `/run-sync-get-dataset-items?token=${config.apifyToken}`;
-
-    const raw = (await fetchJson(
-      url,
+    const raw = (await apifyFetch(
+      cfg.getActor(),
       cfg.buildBody(query),
       config.apifyTimeoutMs,
-      `${cfg.label} data source`
+      `${cfg.label} data source`,
     )) as unknown;
     const rows = (Array.isArray(raw) ? raw : []) as Row[];
 

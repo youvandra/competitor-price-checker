@@ -1,4 +1,5 @@
 // Shared helpers used across marketplace adapters.
+import { config } from "./config.js";
 import type { NormalizedOffer } from "./types.js";
 
 /**
@@ -145,4 +146,35 @@ export function parseShipping(s: string | undefined): number {
   if (/free/i.test(s)) return 0;
   const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
   return m ? Number(m[1]) : 0;
+}
+
+/**
+ * Call an Apify actor via run-sync-get-dataset-items, trying available tokens
+ * in order. If a token fails with a payment-related HTTP status (402, 403) the
+ * next token is tried automatically. Non-payment failures (timeout, 5xx after
+ * retries) are thrown immediately since a different token won't help.
+ */
+export async function apifyFetch(
+  actor: string,
+  body: unknown,
+  timeoutMs: number,
+  label: string,
+): Promise<unknown> {
+  const tokens = [config.apifyToken, config.apifyBackupToken].filter(Boolean);
+  if (tokens.length === 0) throw new Error("APIFY_TOKEN not configured");
+
+  let lastErr: Error = new Error(`${label} failed`);
+  for (const token of tokens) {
+    const url =
+      `https://api.apify.com/v2/acts/${actor}` +
+      `/run-sync-get-dataset-items?token=${token}`;
+    try {
+      return await fetchJson(url, body, timeoutMs, label);
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      const isPayment = /HTTP (402|403)/.test(lastErr.message);
+      if (!isPayment) throw lastErr;
+    }
+  }
+  throw lastErr;
 }
