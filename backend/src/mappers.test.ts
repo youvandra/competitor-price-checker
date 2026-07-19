@@ -5,8 +5,6 @@ import { mapWalmartRows } from "./walmart.js";
 import { mapAliexpressRows } from "./aliexpress.js";
 import { mapEtsyRows } from "./etsy.js";
 import { mapTargetRows } from "./target.js";
-import { mapBestBuyRows } from "./bestbuy.js";
-import { mapMercadoLibreRows } from "./mercadolibre.js";
 import { mapShopeeRows } from "./shopee.js";
 import { normalizeAmazonOffers } from "./amazon.js";
 
@@ -71,31 +69,6 @@ test("mapTargetRows reads current_retail, drops sold-out/zero, brand-or-Target s
   assert.equal(r.offers[0].sellerName, "Logitech"); // brand hint
   assert.equal(r.offers[0].landed, 25);
   assert.equal(r.offers[1].sellerName, "Target"); // fallback
-});
-
-test("mapBestBuyRows drops zero price, falls back seller to Best Buy", () => {
-  const r = mapBestBuyRows([
-    { title: "TV", price: 199, rating: 4.8 },
-    { title: "Free?", price: 0 }, // dropped: zero
-    { title: "Laptop", price: 210, seller: "MarketplaceX" },
-  ]);
-  assert.equal(r.offers.length, 2);
-  assert.equal(r.currency, "$");
-  assert.equal(r.offers[0].sellerName, "Best Buy"); // fallback
-  assert.equal(r.offers[1].sellerName, "MarketplaceX");
-});
-
-test("mapMercadoLibreRows keeps in-stock, maps BRL currency", () => {
-  const r = mapMercadoLibreRows([
-    { title: "Notebook", price: 120, currency: "BRL", sellerName: "LojaBR", availableStock: 5 },
-    { title: "OOS", price: 100, currency: "BRL", availableStock: 0 }, // dropped: no stock
-    { title: "NoStockField", price: 80, currency: "BRL" }, // kept: stock unknown
-  ]);
-  assert.equal(r.offers.length, 2);
-  assert.equal(r.currency, "R$");
-  assert.equal(r.offers[0].sellerName, "LojaBR");
-  assert.equal(r.offers[0].landed, 120);
-  assert.equal(r.offers[1].sellerName, "Mercado Libre seller"); // fallback
 });
 
 test("mapShopeeRows drops zero price, maps IDR + Mall/location seller", () => {

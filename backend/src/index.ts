@@ -8,8 +8,6 @@ import { fetchWalmartOffers } from "./walmart.js";
 import { fetchAliexpressOffers } from "./aliexpress.js";
 import { fetchEtsyOffers } from "./etsy.js";
 import { fetchTargetOffers } from "./target.js";
-import { fetchBestBuyOffers } from "./bestbuy.js";
-import { fetchMercadoLibreOffers } from "./mercadolibre.js";
 import { fetchShopeeOffers } from "./shopee.js";
 import { runBestPrice } from "./compare.js";
 import { relevanceFilter } from "./util.js";
@@ -68,20 +66,6 @@ const TARGET_META = {
   source: "live Target listings",
   caveat:
     "Target listings are matched by keyword (no shared Buy Box). Shipping is not included in the search figure. A specific query plus my_price to anchor relevance sharpens the match.",
-};
-const BESTBUY_META = {
-  marketplace: "bestbuy.com",
-  leaderLabel: "lowest listing",
-  source: "live Best Buy listings",
-  caveat:
-    "Best Buy listings are matched by keyword (no shared Buy Box). Shipping is not included in the search figure. A specific query plus my_price to anchor relevance sharpens the match.",
-};
-const MERCADOLIBRE_META = {
-  marketplace: "mercadolibre.com",
-  leaderLabel: "lowest listing",
-  source: "live Mercado Libre listings",
-  caveat:
-    "Mercado Libre listings are matched by keyword (no shared Buy Box). Prices are in the site's local currency (BRL/MXN/...); the Best Price scan converts to USD at approximate static rates for ranking only. A specific query plus my_price sharpens the match.",
 };
 const SHOPEE_META = {
   marketplace: "shopee.com",
@@ -278,8 +262,6 @@ const runWalmart = makeKeywordRunner(fetchWalmartOffers, WALMART_META);
 const runAliexpress = makeKeywordRunner(fetchAliexpressOffers, ALIEXPRESS_META);
 const runEtsy = makeKeywordRunner(fetchEtsyOffers, ETSY_META);
 const runTarget = makeKeywordRunner(fetchTargetOffers, TARGET_META);
-const runBestBuy = makeKeywordRunner(fetchBestBuyOffers, BESTBUY_META);
-const runMercadoLibre = makeKeywordRunner(fetchMercadoLibreOffers, MERCADOLIBRE_META);
 const runShopee = makeKeywordRunner(fetchShopeeOffers, SHOPEE_META);
 
 // ---- Best Price Scan (cross-marketplace) -----------------------------------
@@ -418,24 +400,6 @@ app.post(
   preflightKeyword,
   paidRoute("POST /target", "Target competitor-price advice (keyword listings)"),
   runTarget
-);
-
-// Best Buy (keyword-based competitor pricing).
-app.post("/preview/bestbuy", previewLimiter, runBestBuy);
-app.post(
-  "/bestbuy",
-  preflightKeyword,
-  paidRoute("POST /bestbuy", "Best Buy competitor-price advice (keyword listings)"),
-  runBestBuy
-);
-
-// Mercado Libre (keyword-based competitor pricing).
-app.post("/preview/mercadolibre", previewLimiter, runMercadoLibre);
-app.post(
-  "/mercadolibre",
-  preflightKeyword,
-  paidRoute("POST /mercadolibre", "Mercado Libre competitor-price advice (keyword listings)"),
-  runMercadoLibre
 );
 
 // Shopee (keyword-based competitor pricing).
