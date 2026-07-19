@@ -55,15 +55,19 @@ export function makeKeywordAdapter<Row>(
     )) as unknown;
     const rows = (Array.isArray(raw) ? raw : []) as Row[];
 
-    // Some actors return a single error-wrapper row (e.g. an anti-bot "blocked
-    // wall") instead of listings. Surface it as a failure rather than silently
-    // reporting "no competitors found".
-    if (
-      rows.length > 0 &&
-      rows.every((r) => r && typeof r === "object" && "error" in (r as object))
-    ) {
-      const first = rows[0] as { error?: unknown };
-      throw new Error(`${cfg.label} upstream returned an error: ${String(first.error)}`);
+    // Some actors return a single error-wrapper row instead of listings — e.g.
+    // an anti-bot "blocked wall" ({error}) or a bot-challenge ({type, reason,
+    // message}). Surface it as a failure rather than silently reporting "no
+    // competitors found".
+    const isErrorRow = (r: unknown): boolean => {
+      if (!r || typeof r !== "object") return false;
+      const o = r as Record<string, unknown>;
+      return "error" in o || ("reason" in o && ("message" in o || "type" in o));
+    };
+    if (rows.length > 0 && rows.every(isErrorRow)) {
+      const o = rows[0] as Record<string, unknown>;
+      const msg = o.error ?? o.message ?? o.reason;
+      throw new Error(`${cfg.label} upstream returned an error: ${String(msg)}`);
     }
 
     const data = cfg.mapRows(rows);
