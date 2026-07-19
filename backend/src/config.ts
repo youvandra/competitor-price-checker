@@ -18,7 +18,7 @@ export const config = {
   apifyEtsyActor: process.env.APIFY_ETSY_ACTOR || "automation-lab~etsy-scraper",
   etsyMaxItems: parseInt(process.env.ETSY_MAX_ITEMS || "20", 10),
   apifyTargetActor:
-    process.env.APIFY_TARGET_ACTOR || "ecomscrape~target-product-search-scraper",
+    process.env.APIFY_TARGET_ACTOR || "shahidirfan~target-product-scraper",
   targetMaxItems: parseInt(process.env.TARGET_MAX_ITEMS || "20", 10),
   apifyBestBuyActor: process.env.APIFY_BESTBUY_ACTOR || "gio21~bestbuy-scraper",
   bestBuyMaxItems: parseInt(process.env.BESTBUY_MAX_ITEMS || "20", 10),

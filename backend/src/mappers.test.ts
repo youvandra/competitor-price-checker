@@ -58,12 +58,13 @@ test("mapEtsyRows parses string price, skips digital + zero", () => {
   assert.equal(r.offers[0].sellerName, "Crafty");
 });
 
-test("mapTargetRows reads nested price, drops zero/missing, brand-or-Target seller", () => {
+test("mapTargetRows reads current_retail, drops sold-out/zero, brand-or-Target seller", () => {
   const r = mapTargetRows([
-    { title: "Mouse", price: { current_retail: 25 }, rating_score: 4.2, primary_brand: { name: "Logitech" } },
-    { title: "Pad", price: { current_retail: 30 } },
-    { title: "Zero", price: { current_retail: 0 } }, // dropped: zero
-    { title: "NoPrice" }, // dropped: no price
+    { title: "Mouse", current_retail: 25, rating_average: 4.2, brand: "Logitech" },
+    { title: "Pad", current_retail: 30 },
+    { title: "Zero", current_retail: 0 }, // dropped: zero
+    { title: "OOS", current_retail: 20, sold_out: true }, // dropped: sold out
+    { title: "OOSall", current_retail: 22, is_out_of_stock_all_locations: true }, // dropped
   ]);
   assert.equal(r.offers.length, 2);
   assert.equal(r.currency, "$");
