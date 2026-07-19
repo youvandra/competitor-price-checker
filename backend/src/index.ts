@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
 import { fetchEbayOffers } from "./ebay.js";
 import { fetchWalmartOffers } from "./walmart.js";
+import { fetchAliexpressOffers } from "./aliexpress.js";
 import { relevanceFilter } from "./util.js";
 import { buildAdvice } from "./strategy.js";
 import type { NormalizedOffer } from "./types.js";
@@ -37,6 +38,13 @@ const WALMART_META = {
   source: "Apify pear_fight walmart-scraper",
   caveat:
     "Walmart listings are matched by keyword (no shared Buy Box). Search can surface related items, so a specific query — plus my_price to anchor relevance — sharpens the match.",
+};
+const ALIEXPRESS_META = {
+  marketplace: "aliexpress.com",
+  leaderLabel: "lowest listing",
+  source: "Apify kawsar aliexpress-search-scraper",
+  caveat:
+    "AliExpress listings are matched by keyword (no shared Buy Box). Prices are in the store's currency and can include heavy discounts; a specific query plus my_price to anchor relevance sharpens the match.",
 };
 
 // ---- helpers ---------------------------------------------------------------
@@ -223,6 +231,7 @@ function makeKeywordRunner(fetchFn: KeywordFetch, meta: KeywordMeta) {
 
 const runEbay = makeKeywordRunner(fetchEbayOffers, EBAY_META);
 const runWalmart = makeKeywordRunner(fetchWalmartOffers, WALMART_META);
+const runAliexpress = makeKeywordRunner(fetchAliexpressOffers, ALIEXPRESS_META);
 
 // ---- routes ----------------------------------------------------------------
 
@@ -262,6 +271,15 @@ app.post(
   preflightKeyword,
   paidRoute("POST /walmart", "Walmart competitor-price advice (keyword listings)"),
   runWalmart
+);
+
+// AliExpress (keyword-based competitor pricing).
+app.post("/preview/aliexpress", previewLimiter, runAliexpress);
+app.post(
+  "/aliexpress",
+  preflightKeyword,
+  paidRoute("POST /aliexpress", "AliExpress competitor-price advice (keyword listings)"),
+  runAliexpress
 );
 
 // ---- naive per-IP rate limit for the free preview --------------------------

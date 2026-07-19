@@ -1,6 +1,6 @@
 import { config } from "./config.js";
 import { TtlCache } from "./cache.js";
-import { cleanSeller } from "./util.js";
+import { cleanSeller, parseShipping } from "./util.js";
 import type { NormalizedOffer } from "./types.js";
 
 // eBay adapter: keyword -> Apify eBay search -> NormalizedOffer[].
@@ -16,14 +16,6 @@ interface RawEbayItem {
   sellerName?: string;
   sellerFeedbackPercent?: string;
   url?: string;
-}
-
-/** eBay reports shipping as free text. Pull a number out, treat "free" as 0. */
-export function parseShipping(s: string | undefined): number {
-  if (!s) return 0;
-  if (/free/i.test(s)) return 0;
-  const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
-  return m ? Number(m[1]) : 0;
 }
 
 export interface EbayFetch {

@@ -184,7 +184,10 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
 - [x] Landing page + live demo (`backend/public/index.html`) — orange brand, marketplace tabs,
       calls free `/preview/*`, renders market stats + strategy cards + recommendation. Served via
       express.static at `/`. Tested end-to-end in browser.
-- [ ] Optional: AliExpress / SEA marketplaces, tighter keyword matching (UPC/EPID).
+- [x] AliExpress service (`/aliexpress`, `/preview/aliexpress`) — keyword-based, actor
+      `kawsar~aliexpress-search-scraper` (~30-36s, $6/1k). Wired via the keyword factory (adapter + meta
+      + routes only). parseShipping moved to util.ts. 4 marketplaces live.
+- [ ] Optional: SEA marketplaces (Shopee/Tokopedia/Lazada), tighter keyword matching (UPC/EPID).
 - Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).

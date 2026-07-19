@@ -122,14 +122,15 @@ export function x402Info(): Record<string, unknown> {
       payTo: config.x402PayTo || null,
     },
     settlement: "on-chain via OKX facilitator (@okxweb3/x402-express)",
-    paid: ["POST /amazon", "POST /ebay", "POST /walmart"],
+    paid: ["POST /amazon", "POST /ebay", "POST /walmart", "POST /aliexpress"],
     free: [
       "POST /preview/amazon",
       "POST /preview/ebay",
       "POST /preview/walmart",
+      "POST /preview/aliexpress",
       "GET /quote",
       "GET /health",
     ],
-    note: "No free tier on paid services — every /amazon, /ebay and /walmart call requires x402 payment.",
+    note: "No free tier on paid services — every marketplace call requires x402 payment.",
   };
 }

@@ -36,8 +36,16 @@ export function relevanceFilter(
   return kept.length >= 2 ? kept : offers;
 }
 
-/** Map a currency code to a short symbol, falling back to the code. */
+/** Map a currency code to a short symbol, falling back to $. */
 export function currencySymbol(code: string | undefined): string {
   const map: Record<string, string> = { USD: "$", GBP: "£", EUR: "€" };
   return (code && map[code]) || "$";
+}
+
+/** Parse a free-text shipping label into a number; "free" -> 0. */
+export function parseShipping(s: string | undefined): number {
+  if (!s) return 0;
+  if (/free/i.test(s)) return 0;
+  const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+  return m ? Number(m[1]) : 0;
 }
