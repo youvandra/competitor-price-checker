@@ -4,33 +4,26 @@ import { makeKeywordAdapter, type KeywordFetchData } from "./keyword-adapter.js"
 import type { NormalizedOffer } from "./types.js";
 
 // Shopee adapter: keyword -> Apify Shopee search -> NormalizedOffer[].
-// Keyword-based (Definition B), SEA. Prices are in the site's local currency
-// (IDR/SGD/...) — the Best Price scan converts to USD for ranking. The search
-// omits a shipping figure, so landed == price.
+// Keyword-based (Definition B), SEA. Actor gio21/shopee-scraper returns prices
+// in the site's local currency (IDR/SGD/THB...) — the Best Price scan converts
+// to USD for ranking. Search omits shipping, so landed == price. Note: the item
+// title field is `name`, not `title`. Free Apify plans return mock data only.
 
 export interface RawShopeeItem {
+  name?: string;
   price?: number;
-  currency?: string; // "IDR" | "SGD" | ...
-  rating?: number;
+  currency?: string; // "IDR" | "SGD" | "THB" | ...
   shopName?: string;
-  stock?: number;
-  isOfficialShop?: boolean;
+  rating?: number;
 }
 
 export function mapShopeeRows(rows: RawShopeeItem[]): KeywordFetchData {
   const offers: NormalizedOffer[] = rows
-    .filter(
-      (o) =>
-        typeof o.price === "number" && o.price > 0 && (o.stock == null || o.stock > 0)
-    )
+    .filter((o) => typeof o.price === "number" && o.price > 0)
     .map((o) => {
       const price = o.price as number;
       return {
-        sellerName: o.shopName
-          ? cleanSeller(o.shopName)
-          : o.isOfficialShop
-            ? "Shopee official store"
-            : "Shopee seller",
+        sellerName: o.shopName ? cleanSeller(o.shopName) : "Shopee seller",
         price,
         shipping: 0,
         landed: price,
@@ -49,6 +42,7 @@ export const fetchShopeeOffers = makeKeywordAdapter<RawShopeeItem>({
   getActor: () => config.apifyShopeeActor,
   buildBody: (query) => ({
     keywords: [query],
+    country: config.shopeeCountry,
     maxItems: config.shopeeMaxItems,
   }),
   mapRows: mapShopeeRows,

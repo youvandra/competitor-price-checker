@@ -58,52 +58,54 @@ test("mapEtsyRows parses string price, skips digital + zero", () => {
   assert.equal(r.offers[0].sellerName, "Crafty");
 });
 
-test("mapTargetRows filters out-of-stock/zero, falls back seller to Target", () => {
+test("mapTargetRows reads nested price, drops zero/missing, brand-or-Target seller", () => {
   const r = mapTargetRows([
-    { price: 25, currency: "USD", rating: 4.2, availability: "In stock" },
-    { price: 30, seller: "Partner Co", availability: "In stock" },
-    { price: 0, availability: "In stock" }, // dropped: zero
-    { price: 20, availability: "Out of stock" }, // dropped: oos
+    { title: "Mouse", price: { current_retail: 25 }, rating_score: 4.2, primary_brand: { name: "Logitech" } },
+    { title: "Pad", price: { current_retail: 30 } },
+    { title: "Zero", price: { current_retail: 0 } }, // dropped: zero
+    { title: "NoPrice" }, // dropped: no price
   ]);
   assert.equal(r.offers.length, 2);
   assert.equal(r.currency, "$");
-  assert.equal(r.offers[0].sellerName, "Target"); // fallback
+  assert.equal(r.offers[0].sellerName, "Logitech"); // brand hint
   assert.equal(r.offers[0].landed, 25);
-  assert.equal(r.offers[1].sellerName, "Partner Co");
+  assert.equal(r.offers[1].sellerName, "Target"); // fallback
 });
 
-test("mapBestBuyRows drops sold-out, falls back seller to Best Buy", () => {
+test("mapBestBuyRows drops zero price, falls back seller to Best Buy", () => {
   const r = mapBestBuyRows([
-    { price: 199, currency: "USD", rating: 4.8 },
-    { price: 150, availability: "Sold out" }, // dropped
-    { price: 210, seller: "MarketplaceX", availability: "Available" },
+    { title: "TV", price: 199, rating: 4.8 },
+    { title: "Free?", price: 0 }, // dropped: zero
+    { title: "Laptop", price: 210, seller: "MarketplaceX" },
   ]);
   assert.equal(r.offers.length, 2);
+  assert.equal(r.currency, "$");
   assert.equal(r.offers[0].sellerName, "Best Buy"); // fallback
   assert.equal(r.offers[1].sellerName, "MarketplaceX");
 });
 
-test("mapMercadoLibreRows keeps New in-stock, maps BRL currency", () => {
+test("mapMercadoLibreRows keeps in-stock, maps BRL currency", () => {
   const r = mapMercadoLibreRows([
-    { price: 120, currency_id: "BRL", condition: "new", seller_nickname: "LojaBR", available_quantity: 5 },
-    { price: 90, currency_id: "BRL", condition: "used", available_quantity: 2 }, // dropped: used
-    { price: 100, currency_id: "BRL", condition: "new", available_quantity: 0 }, // dropped: no stock
+    { title: "Notebook", price: 120, currency: "BRL", sellerName: "LojaBR", availableStock: 5 },
+    { title: "OOS", price: 100, currency: "BRL", availableStock: 0 }, // dropped: no stock
+    { title: "NoStockField", price: 80, currency: "BRL" }, // kept: stock unknown
   ]);
-  assert.equal(r.offers.length, 1);
+  assert.equal(r.offers.length, 2);
   assert.equal(r.currency, "R$");
   assert.equal(r.offers[0].sellerName, "LojaBR");
   assert.equal(r.offers[0].landed, 120);
+  assert.equal(r.offers[1].sellerName, "Mercado Libre seller"); // fallback
 });
 
-test("mapShopeeRows filters zero-stock, maps IDR + official-shop fallback", () => {
+test("mapShopeeRows drops zero price, maps IDR + shop fallback", () => {
   const r = mapShopeeRows([
-    { price: 150000, currency: "IDR", rating: 4.9, isOfficialShop: true, stock: 12 },
-    { price: 90000, currency: "IDR", shopName: "TokoA", stock: 3 },
-    { price: 80000, currency: "IDR", stock: 0 }, // dropped: no stock
+    { name: "Case", price: 150000, currency: "IDR", rating: 4.9 },
+    { name: "Cable", price: 90000, currency: "IDR", shopName: "TokoA" },
+    { name: "Free?", price: 0, currency: "IDR" }, // dropped: zero
   ]);
   assert.equal(r.offers.length, 2);
   assert.equal(r.currency, "Rp");
-  assert.equal(r.offers[0].sellerName, "Shopee official store");
+  assert.equal(r.offers[0].sellerName, "Shopee seller"); // fallback
   assert.equal(r.offers[1].sellerName, "TokoA");
 });
 

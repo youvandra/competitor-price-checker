@@ -44,8 +44,10 @@ export function currencySymbol(code: string | undefined): string {
     EUR: "€",
     BRL: "R$", // Mercado Libre (Brazil)
     MXN: "Mex$", // Mercado Libre (Mexico)
+    ARS: "AR$", // Mercado Libre (Argentina)
     SGD: "S$", // Shopee (Singapore)
     IDR: "Rp", // Shopee (Indonesia)
+    THB: "฿", // Shopee (Thailand)
   };
   return (code && map[code]) || "$";
 }
@@ -58,8 +60,10 @@ const USD_PER_SYMBOL: Record<string, number> = {
   "£": 1.27,
   "R$": 0.18,
   "Mex$": 0.054,
+  "AR$": 0.00087,
   "S$": 0.74,
   "Rp": 0.000061,
+  "฿": 0.028,
 };
 
 /** Convert an amount in a symbol's currency to approximate USD. */
