@@ -98,16 +98,18 @@ test("mapMercadoLibreRows keeps in-stock, maps BRL currency", () => {
   assert.equal(r.offers[1].sellerName, "Mercado Libre seller"); // fallback
 });
 
-test("mapShopeeRows drops zero price, maps IDR + shop fallback", () => {
+test("mapShopeeRows drops zero price, maps IDR + Mall/location seller", () => {
   const r = mapShopeeRows([
-    { name: "Case", price: 150000, currency: "IDR", rating: 4.9 },
-    { name: "Cable", price: 90000, currency: "IDR", shopName: "TokoA" },
+    { name: "Mouse", price: 132000, currency: "IDR", rating: 4.9, is_mall: true },
+    { name: "Cable", price: 90000, currency: "IDR", location: "Jakarta Pusat" },
+    { name: "Plain", price: 50000, currency: "IDR" },
     { name: "Free?", price: 0, currency: "IDR" }, // dropped: zero
   ]);
-  assert.equal(r.offers.length, 2);
+  assert.equal(r.offers.length, 3);
   assert.equal(r.currency, "Rp");
-  assert.equal(r.offers[0].sellerName, "Shopee seller"); // fallback
-  assert.equal(r.offers[1].sellerName, "TokoA");
+  assert.equal(r.offers[0].sellerName, "Shopee Mall");
+  assert.equal(r.offers[1].sellerName, "Shopee seller (Jakarta Pusat)");
+  assert.equal(r.offers[2].sellerName, "Shopee seller");
 });
 
 test("normalizeAmazonOffers keeps New only, computes landed + currency", () => {

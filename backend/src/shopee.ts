@@ -4,17 +4,19 @@ import { makeKeywordAdapter, type KeywordFetchData } from "./keyword-adapter.js"
 import type { NormalizedOffer } from "./types.js";
 
 // Shopee adapter: keyword -> Apify Shopee search -> NormalizedOffer[].
-// Keyword-based (Definition B), SEA. Actor gio21/shopee-scraper returns prices
-// in the site's local currency (IDR/SGD/THB...) — the Best Price scan converts
-// to USD for ranking. Search omits shipping, so landed == price. Note: the item
-// title field is `name`, not `title`. Free Apify plans return mock data only.
+// Keyword-based (Definition B), SEA. Actor xtracto/shopee-search (pay-per-event)
+// returns prices in the site's local currency (IDR/SGD/...) — the Best Price
+// scan converts to USD for ranking. Search omits shipping, so landed == price.
+// The item title field is `name`; there is no shop-name field, so the seller is
+// derived from the Mall flag / location.
 
 export interface RawShopeeItem {
   name?: string;
   price?: number;
-  currency?: string; // "IDR" | "SGD" | "THB" | ...
-  shopName?: string;
+  currency?: string; // "IDR" | "SGD" | "MYR" | ...
   rating?: number;
+  location?: string;
+  is_mall?: boolean;
 }
 
 export function mapShopeeRows(rows: RawShopeeItem[]): KeywordFetchData {
@@ -22,8 +24,13 @@ export function mapShopeeRows(rows: RawShopeeItem[]): KeywordFetchData {
     .filter((o) => typeof o.price === "number" && o.price > 0)
     .map((o) => {
       const price = o.price as number;
+      const seller = o.is_mall
+        ? "Shopee Mall"
+        : o.location
+          ? `Shopee seller (${cleanSeller(o.location)})`
+          : "Shopee seller";
       return {
-        sellerName: o.shopName ? cleanSeller(o.shopName) : "Shopee seller",
+        sellerName: seller,
         price,
         shipping: 0,
         landed: price,
@@ -41,9 +48,10 @@ export const fetchShopeeOffers = makeKeywordAdapter<RawShopeeItem>({
   label: "Shopee",
   getActor: () => config.apifyShopeeActor,
   buildBody: (query) => ({
-    keywords: [query],
-    country: config.shopeeCountry,
-    maxItems: config.shopeeMaxItems,
+    mode: "keyword",
+    keyword: query,
+    country: config.shopeeCountry.toLowerCase(),
+    maxProducts: config.shopeeMaxItems,
   }),
   mapRows: mapShopeeRows,
 });

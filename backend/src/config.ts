@@ -26,7 +26,7 @@ export const config = {
     process.env.APIFY_MERCADOLIBRE_ACTOR || "scrapers_lat~mercadolibre-scraper",
   mercadoLibreMaxItems: parseInt(process.env.MERCADOLIBRE_MAX_ITEMS || "20", 10),
   mercadoLibreCountry: process.env.MERCADOLIBRE_COUNTRY || "br", // ar | mx | br | co | cl
-  apifyShopeeActor: process.env.APIFY_SHOPEE_ACTOR || "gio21~shopee-scraper",
+  apifyShopeeActor: process.env.APIFY_SHOPEE_ACTOR || "xtracto~shopee-search",
   shopeeMaxItems: parseInt(process.env.SHOPEE_MAX_ITEMS || "20", 10),
   shopeeCountry: process.env.SHOPEE_COUNTRY || "ID", // BR | SG | MY | TH | ID | MX | PH | VN
 
