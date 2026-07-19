@@ -15,6 +15,9 @@ import { paidRoute, x402Info } from "./x402.js";
 import type { CheckInput } from "./types.js";
 
 const app = express();
+// Live behind a reverse proxy (pricecheck.web.id) — trust the first hop so
+// req.ip reflects the real client for the preview rate limiter, not the proxy.
+app.set("trust proxy", 1);
 app.use(express.json());
 
 // Serve the landing page + live demo (backend/public).
@@ -250,7 +253,6 @@ interface ParsedBestPrice {
   amazonAsin?: string;
   amazonDomain?: string;
   myPrice?: number;
-  myCost?: number;
 }
 
 function parseBestPriceBody(
@@ -281,11 +283,9 @@ function parseBestPriceBody(
   if (myPrice != null && !Number.isFinite(myPrice)) {
     return { ok: false, error: "`my_price` must be a number" };
   }
-  const myCost = b.my_cost != null ? Number(b.my_cost) : undefined;
-  if (myCost != null && !Number.isFinite(myCost)) {
-    return { ok: false, error: "`my_cost` must be a number" };
-  }
-  return { ok: true, value: { query, amazonAsin, amazonDomain, myPrice, myCost } };
+  // Best Price ranks marketplaces by price only; my_cost (margin) is a
+  // per-marketplace concern — use POST /<marketplace> for the margin breakdown.
+  return { ok: true, value: { query, amazonAsin, amazonDomain, myPrice } };
 }
 
 function preflightBestPrice(req: Request, res: Response, next: NextFunction): void {

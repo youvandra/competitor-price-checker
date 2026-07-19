@@ -134,7 +134,6 @@ export interface BestPriceInput {
   amazonAsin?: string;
   amazonDomain?: string;
   myPrice?: number;
-  myCost?: number;
 }
 
 /** Fan out to every marketplace, then aggregate. */
