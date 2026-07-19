@@ -4,6 +4,7 @@ Updated 2026-07-19 — reflects shipped state: 6 paid A2MCP services across 5 ma
 cross-marketplace Best Price Scan, x402 v2 live, decision-grade output, 26 tests green, landing page.
 
 > Category: **Software Utility** (secondary flavor: Finance Copilot for sellers/commerce agents).
+> **Live:** https://pricecheck.web.id (landing) · https://pricecheck.web.id/quote (pricing + status)
 
 ## Google Form Fields
 
@@ -101,6 +102,7 @@ Competitor Price Checker answers. An A2MCP service on X Layer.
 🌐 Best Price Scan: cheapest across EVERY marketplace in one call
 💸 x402 v2: free preview, then 0.4 USDT / call · 1.5 for a full scan — settled on-chain, no key held
 
+Live: pricecheck.web.id
 Built for @OKXAI Genesis Hackathon #OKXAI
 ```
 
@@ -142,9 +144,13 @@ Status kode & produk — DONE:
 - [x] Landing page + brand
 - [x] Endpoint self-check: `GET /health`, `GET /quote`, 402 challenge verified
 
+Status deploy — DONE:
+- [x] **Deployed**: https://pricecheck.web.id (VPS, pm2 `competitor-price-checker` :3006, nginx + HTTPS/Certbot)
+- [x] `X402_MODE=demo` live (402 challenge verified over HTTPS)
+
 Butuh AKSI kamu (blocker submission):
-- [ ] **Deploy** ke public HTTPS + domain (pola `*.my.id` / `*.web.id`); set `X402_MODE=on`
-- [ ] **Register** ASP di OKX.AI → dapat Agent ID (isi field di atas)
+- [ ] (Opsional) `X402_MODE=on` di prod untuk settlement penuh saat scene demo 402
+- [ ] **Register** ASP di OKX.AI dengan endpoint `https://pricecheck.web.id` → dapat Agent ID (isi field di atas)
 - [ ] Ganti CTA landing `href="#"` → `https://www.okx.ai/agents/{id}`
 - [ ] Isi placeholder: X handle, Telegram handle
 - [ ] Rekam demo video ≤90s (script + voice-over di `DEMO_VOICEOVER.md`)

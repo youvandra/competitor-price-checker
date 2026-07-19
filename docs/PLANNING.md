@@ -195,6 +195,8 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
       Live-verified: 5 marketplaces scanned in ~25s, cheapest picked, savings computed.
 - [x] DEPLOYED to VPS (pm2 `competitor-price-checker`, port 3006, X402_MODE=demo). Live + externally
       reachable, full flow + 402 verified. Redeploy: git pull && npm i && npm run build && pm2 restart.
+- [x] DOMAIN LIVE: https://pricecheck.web.id (nginx reverse-proxy -> :3006, HTTPS via Certbot,
+      HTTP->HTTPS redirect). Verified end-to-end over HTTPS.
 - [x] RELIABILITY: fetchJson retries transient failures (network/429/5xx) with backoff (not timeouts/4xx).
 - [x] AGENT FLOW: every advice + Best Price Scan returns `nextActions` — composable follow-up hints
       (pass my_price/my_cost, call /best-price, call the cheapest marketplace, retry failed ones).

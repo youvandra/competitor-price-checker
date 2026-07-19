@@ -122,7 +122,7 @@ Every marketplace returns the **same** result shape — only the input and the `
 ## Example
 
 ```bash
-curl -s -X POST https://<your-domain>/preview/amazon \
+curl -s -X POST https://pricecheck.web.id/preview/amazon \
   -H 'Content-Type: application/json' \
   -d '{"product_url":"https://www.amazon.com/dp/B0966NLTZS","my_price":610,"my_cost":450}'
 ```
@@ -155,7 +155,7 @@ curl -s -X POST https://<your-domain>/preview/amazon \
 For the keyword marketplaces (`/ebay`, `/walmart`, `/aliexpress`, `/etsy`), send a `query` instead:
 
 ```bash
-curl -s -X POST https://<your-domain>/preview/ebay \
+curl -s -X POST https://pricecheck.web.id/preview/ebay \
   -H 'Content-Type: application/json' \
   -d '{"query":"logitech mx master 3s wireless mouse","my_price":95,"my_cost":70}'
 ```
@@ -166,7 +166,7 @@ The response has the identical shape — only `market.leaderLabel` reads `"lowes
 **Best Price Scan** checks every marketplace in one call and tells you where it's cheapest:
 
 ```bash
-curl -s -X POST https://<your-domain>/preview/best-price \
+curl -s -X POST https://pricecheck.web.id/preview/best-price \
   -H 'Content-Type: application/json' \
   -d '{"query":"logitech mx master 3s wireless mouse","amazon_asin":"B0966NLTZS","my_price":95}'
 ```
