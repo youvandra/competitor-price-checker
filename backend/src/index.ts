@@ -6,6 +6,7 @@ import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
 import { fetchEbayOffers } from "./ebay.js";
 import { fetchWalmartOffers } from "./walmart.js";
 import { fetchAliexpressOffers } from "./aliexpress.js";
+import { fetchEtsyOffers } from "./etsy.js";
 import { relevanceFilter } from "./util.js";
 import { buildAdvice } from "./strategy.js";
 import type { NormalizedOffer } from "./types.js";
@@ -45,6 +46,13 @@ const ALIEXPRESS_META = {
   source: "Apify kawsar aliexpress-search-scraper",
   caveat:
     "AliExpress listings are matched by keyword (no shared Buy Box). Prices are in the store's currency and can include heavy discounts; a specific query plus my_price to anchor relevance sharpens the match.",
+};
+const ETSY_META = {
+  marketplace: "etsy.com",
+  leaderLabel: "lowest listing",
+  source: "Apify automation-lab etsy-scraper",
+  caveat:
+    "Etsy listings are matched by keyword (no shared Buy Box) and are often unique/handmade, so 'competitors' are comparable listings, not the same item. Shipping is not included in the search figure. Use a specific query plus my_price to anchor relevance.",
 };
 
 // ---- helpers ---------------------------------------------------------------
@@ -232,6 +240,7 @@ function makeKeywordRunner(fetchFn: KeywordFetch, meta: KeywordMeta) {
 const runEbay = makeKeywordRunner(fetchEbayOffers, EBAY_META);
 const runWalmart = makeKeywordRunner(fetchWalmartOffers, WALMART_META);
 const runAliexpress = makeKeywordRunner(fetchAliexpressOffers, ALIEXPRESS_META);
+const runEtsy = makeKeywordRunner(fetchEtsyOffers, ETSY_META);
 
 // ---- routes ----------------------------------------------------------------
 
@@ -280,6 +289,15 @@ app.post(
   preflightKeyword,
   paidRoute("POST /aliexpress", "AliExpress competitor-price advice (keyword listings)"),
   runAliexpress
+);
+
+// Etsy (keyword-based competitor pricing).
+app.post("/preview/etsy", previewLimiter, runEtsy);
+app.post(
+  "/etsy",
+  preflightKeyword,
+  paidRoute("POST /etsy", "Etsy competitor-price advice (keyword listings)"),
+  runEtsy
 );
 
 // ---- naive per-IP rate limit for the free preview --------------------------

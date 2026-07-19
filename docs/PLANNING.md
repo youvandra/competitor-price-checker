@@ -187,7 +187,10 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
 - [x] AliExpress service (`/aliexpress`, `/preview/aliexpress`) — keyword-based, actor
       `kawsar~aliexpress-search-scraper` (~30-36s, $6/1k). Wired via the keyword factory (adapter + meta
       + routes only). parseShipping moved to util.ts. 4 marketplaces live.
+- [x] Etsy service (`/etsy`, `/preview/etsy`) — keyword-based, actor `automation-lab~etsy-scraper`
+      (~10-12s, PPE). Wired via keyword factory. price is a string (parsed). 5 marketplaces live.
 - [ ] Optional: SEA marketplaces (Shopee/Tokopedia/Lazada), tighter keyword matching (UPC/EPID).
+- [ ] POLISH PHASE next (per user): review + tighten before more marketplaces.
 - Repo: https://github.com/youvandra/competitor-price-checker (SSH remote, no co-author in commits).
 - [ ] Get Apify account + token; validate output shape of the actor.
 - [ ] Finalize `check_amazon` tool schema + strategy math (undercut by $0.01? margin floor rule?).

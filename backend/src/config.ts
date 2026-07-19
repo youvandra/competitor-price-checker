@@ -15,6 +15,8 @@ export const config = {
   apifyAliexpressActor:
     process.env.APIFY_ALIEXPRESS_ACTOR || "kawsar~aliexpress-search-scraper",
   aliexpressMaxItems: parseInt(process.env.ALIEXPRESS_MAX_ITEMS || "20", 10),
+  apifyEtsyActor: process.env.APIFY_ETSY_ACTOR || "automation-lab~etsy-scraper",
+  etsyMaxItems: parseInt(process.env.ETSY_MAX_ITEMS || "20", 10),
 
   // x402 / X Layer
   x402Mode: process.env.X402_MODE || "off", // off | demo | on
