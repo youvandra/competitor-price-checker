@@ -42,6 +42,21 @@ export function currencySymbol(code: string | undefined): string {
   return (code && map[code]) || "$";
 }
 
+// Approximate FX to USD, keyed by currency symbol. Static + disclosed — enough
+// to rank marketplaces against each other, not a settlement-grade rate.
+const USD_PER_SYMBOL: Record<string, number> = { "$": 1, "€": 1.08, "£": 1.27 };
+
+/** Convert an amount in a symbol's currency to approximate USD. */
+export function toUsd(amount: number, symbol: string): number {
+  const rate = USD_PER_SYMBOL[symbol] ?? 1;
+  return Math.round(amount * rate * 100) / 100;
+}
+
+/** True if the symbol is a known non-USD currency (i.e. it was converted). */
+export function isNonUsd(symbol: string): boolean {
+  return symbol !== "$" && symbol in USD_PER_SYMBOL;
+}
+
 /**
  * POST JSON and parse the JSON response, with a hard timeout so a hung upstream
  * (e.g. a slow Apify run) fails cleanly instead of holding the request open.

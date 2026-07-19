@@ -7,6 +7,7 @@ import { fetchEbayOffers } from "./ebay.js";
 import { fetchWalmartOffers } from "./walmart.js";
 import { fetchAliexpressOffers } from "./aliexpress.js";
 import { fetchEtsyOffers } from "./etsy.js";
+import { runBestPrice } from "./compare.js";
 import { relevanceFilter } from "./util.js";
 import { buildAdvice } from "./strategy.js";
 import type { NormalizedOffer } from "./types.js";
@@ -242,6 +243,80 @@ const runWalmart = makeKeywordRunner(fetchWalmartOffers, WALMART_META);
 const runAliexpress = makeKeywordRunner(fetchAliexpressOffers, ALIEXPRESS_META);
 const runEtsy = makeKeywordRunner(fetchEtsyOffers, ETSY_META);
 
+// ---- Best Price Scan (cross-marketplace) -----------------------------------
+
+interface ParsedBestPrice {
+  query: string;
+  amazonAsin?: string;
+  amazonDomain?: string;
+  myPrice?: number;
+  myCost?: number;
+}
+
+function parseBestPriceBody(
+  body: unknown
+): { ok: true; value: ParsedBestPrice } | { ok: false; error: string } {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const query = typeof b.query === "string" ? b.query.trim() : "";
+  if (!query || query.length < 2) {
+    return { ok: false, error: "provide `query` — a product search keyword (min 2 chars)" };
+  }
+  // Optional: include Amazon by ASIN or product URL.
+  let amazonAsin: string | undefined;
+  let amazonDomain: string | undefined;
+  const amazonIn =
+    (typeof b.amazon_url === "string" && b.amazon_url) ||
+    (typeof b.amazon_asin === "string" && b.amazon_asin) ||
+    "";
+  if (amazonIn) {
+    const asin = extractAsin(amazonIn);
+    if (!asin) return { ok: false, error: `could not extract an ASIN from "${amazonIn}"` };
+    amazonAsin = asin;
+    amazonDomain =
+      (typeof b.domain === "string" && b.domain) ||
+      (typeof b.amazon_url === "string" ? domainFromUrl(b.amazon_url) || undefined : undefined) ||
+      "com";
+  }
+  const myPrice = b.my_price != null ? Number(b.my_price) : undefined;
+  if (myPrice != null && !Number.isFinite(myPrice)) {
+    return { ok: false, error: "`my_price` must be a number" };
+  }
+  const myCost = b.my_cost != null ? Number(b.my_cost) : undefined;
+  if (myCost != null && !Number.isFinite(myCost)) {
+    return { ok: false, error: "`my_cost` must be a number" };
+  }
+  return { ok: true, value: { query, amazonAsin, amazonDomain, myPrice, myCost } };
+}
+
+function preflightBestPrice(req: Request, res: Response, next: NextFunction): void {
+  const b = (req.body ?? {}) as Record<string, unknown>;
+  if (typeof b.query !== "string") return next(); // probe -> let x402 issue 402
+  const parsed = parseBestPriceBody(req.body);
+  if (!parsed.ok) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  (res.locals as { best?: ParsedBestPrice }).best = parsed.value;
+  next();
+}
+
+async function runBestPriceHandler(req: Request, res: Response): Promise<void> {
+  const cached = (res.locals as { best?: ParsedBestPrice }).best;
+  const parsed = cached
+    ? { ok: true as const, value: cached }
+    : parseBestPriceBody(req.body);
+  if (!parsed.ok) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    res.json(await runBestPrice(parsed.value));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(502).json({ error: `best price scan failed: ${msg}` });
+  }
+}
+
 // ---- routes ----------------------------------------------------------------
 
 app.get("/health", (_req, res) => {
@@ -298,6 +373,19 @@ app.post(
   preflightKeyword,
   paidRoute("POST /etsy", "Etsy competitor-price advice (keyword listings)"),
   runEtsy
+);
+
+// Best Price Scan — cross-marketplace, priced higher.
+app.post("/preview/best-price", previewLimiter, runBestPriceHandler);
+app.post(
+  "/best-price",
+  preflightBestPrice,
+  paidRoute(
+    "POST /best-price",
+    "Best Price Scan — cheapest across all marketplaces",
+    config.x402ComparePriceUsd
+  ),
+  runBestPriceHandler
 );
 
 // ---- naive per-IP rate limit for the free preview --------------------------

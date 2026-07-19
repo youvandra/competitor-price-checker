@@ -189,6 +189,10 @@ Files: config, cache, types, amazon (adapter), strategy (engine), x402 (path gat
       + routes only). parseShipping moved to util.ts. 4 marketplaces live.
 - [x] Etsy service (`/etsy`, `/preview/etsy`) — keyword-based, actor `automation-lab~etsy-scraper`
       (~10-12s, PPE). Wired via keyword factory. price is a string (parsed). 5 marketplaces live.
+- [x] Best Price Scan (`/best-price`, `/preview/best-price`) — cross-marketplace fan-out (parallel,
+      resilient per-marketplace status), USD ranking via static FX (disclosed), priced higher at
+      **1.5 USDT** (per-route x402 price override). Pure aggregator unit-tested. 26 tests total.
+      Live-verified: 5 marketplaces scanned in ~25s, cheapest picked, savings computed.
 - [ ] Optional: SEA marketplaces (Shopee/Tokopedia/Lazada), tighter keyword matching (UPC/EPID).
 - [x] POLISH PASS: (1) Apify calls now have a hard timeout (fetchJson + APIFY_TIMEOUT_MS=75s) so a
       hung upstream fails cleanly. (2) Every adapter's normalization extracted to a pure exported

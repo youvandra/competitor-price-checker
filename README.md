@@ -87,7 +87,8 @@ flowchart LR
 | `POST` | `/walmart`        | x402                | 0.4 USDT   | Competitor-price advice for a Walmart search (keyword). |
 | `POST` | `/aliexpress`     | x402                | 0.4 USDT   | Competitor-price advice for an AliExpress search (keyword). |
 | `POST` | `/etsy`           | x402                | 0.4 USDT   | Competitor-price advice for an Etsy search (keyword). |
-| `POST` | `/preview/{marketplace}` | free (rate-limited) | —   | Same schema, no payment. (`amazon` · `ebay` · `walmart` · `aliexpress` · `etsy`) |
+| `POST` | `/best-price`     | x402                | **1.5 USDT** | **Best Price Scan** — scans every marketplace at once, ranks by USD, returns the cheapest. |
+| `POST` | `/preview/{name}` | free (rate-limited) | —   | Same schema, no payment. (`amazon` · `ebay` · `walmart` · `aliexpress` · `etsy` · `best-price`) |
 | `GET`  | `/quote`          | free                | —          | Pricing, pay-to address, and x402 status.           |
 | `GET`  | `/health`         | free                | —          | Liveness + config echo.                             |
 
@@ -160,6 +161,28 @@ curl -s -X POST https://<your-domain>/preview/ebay \
 The response has the identical shape — only `market.leaderLabel` reads `"lowest listing"` instead of
 `"Buy Box"`, and `my_price` also anchors relevance to drop off-band accessory listings.
 
+**Best Price Scan** checks every marketplace in one call and tells you where it's cheapest:
+
+```bash
+curl -s -X POST https://<your-domain>/preview/best-price \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"logitech mx master 3s wireless mouse","amazon_asin":"B0966NLTZS","my_price":95}'
+```
+
+```json
+{
+  "summary": "Cheapest on walmart: $59.99 (of 5 marketplaces with offers). You're $35 above the best price.",
+  "cheapest": { "marketplace": "walmart.com", "priceUsd": 59.99, "native": "$59.99" },
+  "results": [ { "marketplace": "walmart.com", "status": "ok", "leaderPriceUsd": 59.99, "offerCount": 9 }, "…" ],
+  "savingsVsCheapestUsd": 35,
+  "evidence": { "marketplacesScanned": 5, "marketplacesWithOffers": 5, "fxNote": "…", "caveat": "…" }
+}
+```
+
+It fans out in parallel and is resilient — a marketplace that errors or times out is reported as
+`status: "error"` and never sinks the rest. Non-USD prices are converted to USD (approximate,
+disclosed) purely for ranking. Add `amazon_asin`/`amazon_url` to include Amazon in the scan.
+
 ## Pricing strategies
 
 Comparison is on **landed price** (`item + shipping`), across **New**-condition offers only.
@@ -183,7 +206,7 @@ settled by the OKX facilitator via `@okxweb3/x402-express`.
 |---|---|
 | Network   | X Layer — `eip155:196` |
 | Asset      | USDT0 — `0x779ded0c9e1022225f8e0630b35a9b54be713736` (6 decimals) |
-| Price      | `0.4 USDT` (`amount = 400000`) per paid call |
+| Price      | `0.4 USDT` per marketplace call · `1.5 USDT` for a Best Price Scan (all marketplaces) |
 | Flow       | unpaid → `HTTP 402` + `PAYMENT-REQUIRED` challenge → pay → `HTTP 200` + advice |
 | Free tier  | none on paid endpoints — every `/amazon` call is metered |
 
@@ -274,8 +297,10 @@ competitor-price-checker/
         ├── walmart.ts    adapter: keyword → Walmart listings, normalize
         ├── aliexpress.ts adapter: keyword → AliExpress listings, normalize
         ├── etsy.ts       adapter: keyword → Etsy listings, normalize
+        ├── keyword-adapter.ts  shared cache + fetch + timeout for keyword adapters
+        ├── compare.ts    Best Price Scan: fan-out + USD ranking
         ├── strategy.ts   marketplace-agnostic strategy engine
-        ├── util.ts       seller cleanup, relevance filter, currency
+        ├── util.ts       seller cleanup, relevance filter, currency + FX
         ├── cache.ts      tiny TTL cache
         ├── config.ts     env + X Layer constants
         └── types.ts      shared shapes

@@ -20,7 +20,11 @@ export const x402Enabled = (): boolean =>
 
 const paidCache = new Map<string, Handler>();
 
-function buildPaidMiddleware(routeKey: string, description: string): Handler {
+function buildPaidMiddleware(
+  routeKey: string,
+  description: string,
+  priceUsd: string
+): Handler {
   const facilitator = new OKXFacilitatorClient({
     apiKey: config.xlayerApiKey,
     secretKey: config.xlayerSecretKey,
@@ -36,7 +40,7 @@ function buildPaidMiddleware(routeKey: string, description: string): Handler {
       [routeKey]: {
         accepts: {
           scheme: "exact",
-          price: `$${config.x402PriceUsd}`,
+          price: `$${priceUsd}`,
           network: NETWORK,
           payTo: config.x402PayTo,
         },
@@ -48,8 +52,15 @@ function buildPaidMiddleware(routeKey: string, description: string): Handler {
   ) as unknown as Handler;
 }
 
-/** Express middleware factory for a paid route, e.g. paidRoute("POST /amazon", "..."). */
-export function paidRoute(routeKey: string, description: string): Handler {
+/**
+ * Express middleware factory for a paid route, e.g. paidRoute("POST /amazon", "…").
+ * priceUsd defaults to the standard per-call price; pass it to override (e.g. Best Price Scan).
+ */
+export function paidRoute(
+  routeKey: string,
+  description: string,
+  priceUsd: string = config.x402PriceUsd
+): Handler {
   return (req, res, next) => {
     if (!x402Enabled()) return next();
 
@@ -62,12 +73,12 @@ export function paidRoute(routeKey: string, description: string): Handler {
     if (hasProof) {
       let mw = paidCache.get(routeKey);
       if (!mw) {
-        mw = buildPaidMiddleware(routeKey, description);
+        mw = buildPaidMiddleware(routeKey, description, priceUsd);
         paidCache.set(routeKey, mw);
       }
       return void mw(req, res, next);
     }
-    return send402Challenge(req, res, description);
+    return send402Challenge(req, res, description, priceUsd);
   };
 }
 
@@ -75,11 +86,10 @@ export function paidRoute(routeKey: string, description: string): Handler {
 export function send402Challenge(
   req: Request,
   res: Response,
-  description: string
+  description: string,
+  priceUsd: string = config.x402PriceUsd
 ): void {
-  const amount = Math.round(
-    Number(config.x402PriceUsd) * 10 ** USDT0_DECIMALS
-  ).toString();
+  const amount = Math.round(Number(priceUsd) * 10 ** USDT0_DECIMALS).toString();
   const challenge = {
     x402Version: 2,
     resource: {
@@ -112,10 +122,8 @@ export function x402Info(): Record<string, unknown> {
     mode: config.x402Mode,
     x402Version: 2,
     pricing: {
-      perCall: `$${config.x402PriceUsd}`,
-      amount: Math.round(
-        Number(config.x402PriceUsd) * 10 ** USDT0_DECIMALS
-      ).toString(),
+      perMarketplaceCall: `$${config.x402PriceUsd}`,
+      bestPriceScan: `$${config.x402ComparePriceUsd}`,
       asset: USDT0_XLAYER,
       assetSymbol: "USDT0",
       network: NETWORK,
@@ -128,6 +136,7 @@ export function x402Info(): Record<string, unknown> {
       "POST /walmart",
       "POST /aliexpress",
       "POST /etsy",
+      "POST /best-price",
     ],
     free: [
       "POST /preview/amazon",
@@ -135,9 +144,10 @@ export function x402Info(): Record<string, unknown> {
       "POST /preview/walmart",
       "POST /preview/aliexpress",
       "POST /preview/etsy",
+      "POST /preview/best-price",
       "GET /quote",
       "GET /health",
     ],
-    note: "No free tier on paid services — every marketplace call requires x402 payment.",
+    note: "No free tier on paid services — every call requires x402 payment.",
   };
 }

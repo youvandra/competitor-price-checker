@@ -22,6 +22,8 @@ export const config = {
   x402Mode: process.env.X402_MODE || "off", // off | demo | on
   x402PayTo: process.env.X402_PAY_TO || "",
   x402PriceUsd: process.env.X402_PRICE_USD || "0.4",
+  // Best Price Scan fans out across every marketplace — priced higher.
+  x402ComparePriceUsd: process.env.X402_COMPARE_PRICE_USD || "1.5",
   xlayerApiKey: process.env.XLAYER_API_KEY || "",
   xlayerSecretKey: process.env.XLAYER_SECRET_KEY || "",
   xlayerPassphrase: process.env.XLAYER_PASSPHRASE || "",
