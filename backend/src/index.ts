@@ -13,7 +13,7 @@ import { runBestPrice } from "./compare.js";
 import { relevanceFilter } from "./util.js";
 import { buildAdvice } from "./strategy.js";
 import type { NormalizedOffer } from "./types.js";
-import { paidRoute, x402Info } from "./x402.js";
+import { paidRoute, x402Info, x402Enabled, send402Challenge } from "./x402.js";
 import type { CheckInput } from "./types.js";
 
 const app = express();
@@ -423,6 +423,31 @@ app.post(
   ),
   runBestPriceHandler
 );
+
+// ---- GET probe → 402 -------------------------------------------------------
+// x402 validators (and bare curl / browser) probe a paid endpoint with GET.
+// Express only registered these paths for POST, so GET fell through to 404 —
+// which the OKX listing review reads as "no standard 402 challenge". Answer the
+// same 402 challenge on GET so a probe sees a compliant paid endpoint.
+const PAID_PROBES: ReadonlyArray<[string, string, string]> = [
+  ["/amazon", "Amazon competitor-price advice (Buy Box strategy)", config.x402PriceUsd],
+  ["/ebay", "eBay competitor-price advice (keyword listings)", config.x402PriceUsd],
+  ["/walmart", "Walmart competitor-price advice (keyword listings)", config.x402PriceUsd],
+  ["/aliexpress", "AliExpress competitor-price advice (keyword listings)", config.x402PriceUsd],
+  ["/etsy", "Etsy competitor-price advice (keyword listings)", config.x402PriceUsd],
+  ["/target", "Target competitor-price advice (keyword listings)", config.x402PriceUsd],
+  ["/shopee", "Shopee competitor-price advice (keyword listings)", config.x402PriceUsd],
+  ["/best-price", "Best Price Scan — cheapest across all marketplaces", config.x402ComparePriceUsd],
+];
+for (const [pathName, desc, price] of PAID_PROBES) {
+  app.get(pathName, (req, res) => {
+    if (!x402Enabled()) {
+      res.status(405).json({ error: "GET not supported; POST with x402 payment" });
+      return;
+    }
+    send402Challenge(req, res, desc, price);
+  });
+}
 
 // ---- naive per-IP rate limit for the free preview --------------------------
 
