@@ -113,7 +113,7 @@ export const SceneReveal: React.FC = () => {
       <Rise delay={2}><Eyebrow>What if it was one API call?</Eyebrow></Rise>
       <Rise delay={9}>
         <div style={{ fontFamily: FONT_DISPLAY, textTransform: "uppercase", fontSize: 150, lineHeight: 0.95, marginTop: 8 }}>
-          Competitor<br /><A>Price Checker</A>
+          Competitor<br /><A>Price Advisor</A>
         </div>
       </Rise>
       <Rise delay={22}><Sub>Live competitor-price intelligence — priced per call,<br />built for AI agents and sellers.</Sub></Rise>
@@ -215,7 +215,7 @@ export const SceneScan: React.FC = () => {
             <Rise key={m} delay={14 + i * 5}>
               <div style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                background: best ? `linear-gradient(90deg, rgba(245,185,63,.12), ${C.panel})` : C.panel,
+                background: best ? `linear-gradient(90deg, rgba(242,130,12,.14), ${C.panel})` : C.panel,
                 border: `1px solid ${best ? C.accent : C.line}`, borderRadius: 16, padding: "18px 34px", fontSize: 38,
               }}>
                 <span style={{ fontFamily: FONT_MONO, color: best ? C.accent : C.muted }}>{m}</span>
@@ -261,7 +261,7 @@ export const SceneWhy: React.FC = () => {
 export const SceneOutro: React.FC = () => (
   <Stage>
     <Rise delay={3}><div style={{ fontSize: 110, color: C.accent }}>◈</div></Rise>
-    <Rise delay={8}><div style={{ fontFamily: FONT_DISPLAY, textTransform: "uppercase", fontSize: 118, lineHeight: 0.95, marginTop: 10 }}>Competitor <A>Price Checker</A></div></Rise>
+    <Rise delay={8}><div style={{ fontFamily: FONT_DISPLAY, textTransform: "uppercase", fontSize: 118, lineHeight: 0.95, marginTop: 10 }}>Competitor <A>Price Advisor</A></div></Rise>
     <Rise delay={18}><div style={{ fontFamily: FONT_MONO, fontSize: 58, color: C.accent, marginTop: 24 }}>pricecheck.web.id</div></Rise>
     <Rise delay={28}><Sub>Free preview: <B>POST /preview/*</B> · Paid: <B>$0.40/call</B> · Scan: <B>$1.50</B><br />Built on OKX x402 · X Layer · USDT0</Sub></Rise>
   </Stage>

@@ -8,7 +8,7 @@ export const C = {
   line: "#232D40",
   text: "#F2EFE6",
   muted: "#8B94A6",
-  accent: "#F5B93F",
+  accent: "#F2820C",
   win: "#3DD68C",
   lose: "#E5484D",
 };

@@ -41,7 +41,7 @@ export const Stage: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         position: "absolute",
         inset: 0,
         background:
-          "radial-gradient(120% 90% at 50% 0%, rgba(245,185,63,.06), transparent 55%), radial-gradient(90% 70% at 50% 115%, rgba(0,0,0,.5), transparent 60%)",
+          "radial-gradient(120% 90% at 50% 0%, rgba(242,130,12,.07), transparent 55%), radial-gradient(90% 70% at 50% 115%, rgba(0,0,0,.5), transparent 60%)",
         pointerEvents: "none",
       }}
     />
