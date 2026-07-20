@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";
 import { C, SCENE_FRAMES } from "./theme";
 import {
-  SceneHook, ScenePain, SceneReveal, SceneHow,
+  SceneHook, SceneSearch, SceneReveal, SceneHow,
   SceneStrategies, SceneScan, SceneWhy, SceneOutro,
 } from "./scenes";
 
@@ -23,7 +23,7 @@ const Fade: React.FC<{ dur: number; children: React.ReactNode }> = ({ dur, child
 
 export const Video: React.FC = () => {
   const scenes = [
-    SceneHook, ScenePain, SceneReveal, SceneHow,
+    SceneHook, SceneSearch, SceneReveal, SceneHow,
     SceneStrategies, SceneScan, SceneWhy, SceneOutro,
   ];
   let from = 0;
