@@ -2,18 +2,18 @@ import express, { type Request, type Response, type NextFunction } from "express
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
-import { extractAsin, domainFromUrl, fetchAmazonOffers } from "./amazon.js";
+import { extractAsin, domainFromUrl, fetchAmazonOffers, type AmazonFetch } from "./amazon.js";
 import { fetchEbayOffers } from "./ebay.js";
 import { fetchWalmartOffers } from "./walmart.js";
 import { fetchAliexpressOffers } from "./aliexpress.js";
 import { fetchEtsyOffers } from "./etsy.js";
 import { fetchTargetOffers } from "./target.js";
 import { fetchShopeeOffers } from "./shopee.js";
-import { runBestPrice } from "./compare.js";
+import { runBestPrice, type BestPrice } from "./compare.js";
 import { relevanceFilter } from "./util.js";
 import { buildAdvice } from "./strategy.js";
 import type { NormalizedOffer } from "./types.js";
-import { paidRoute, x402Info, x402Enabled, send402Challenge } from "./x402.js";
+import { paidRoute, x402Info, x402Enabled, send402Challenge, type PaidPrecheck } from "./x402.js";
 import type { CheckInput } from "./types.js";
 
 const app = express();
@@ -145,7 +145,10 @@ async function runAmazon(req: Request, res: Response): Promise<void> {
   }
   const { asin, domain, myPrice, myCost, productUrl } = parsed.value;
   try {
-    const { data, fromCache } = await fetchAmazonOffers(asin, domain);
+    // Reuse the fetch the deliverable precheck already did (charge-on-deliverable),
+    // so the paid run never hits the upstream twice.
+    const pre = (res.locals as { amazonData?: { data: AmazonFetch; fromCache: boolean } }).amazonData;
+    const { data, fromCache } = pre ?? (await fetchAmazonOffers(asin, domain));
     const advice = buildAdvice({
       marketplace: `amazon.${domain}`,
       productId: asin,
@@ -166,6 +169,35 @@ async function runAmazon(req: Request, res: Response): Promise<void> {
     res.status(502).json({ error: `upstream fetch failed: ${msg}` });
   }
 }
+
+/**
+ * Deliverable precheck for the PAID Amazon route. Runs before x402 settlement:
+ * fetch the offers; if the ASIN yields no New offers there is nothing to price
+ * against, so short-circuit with a 404 and DON'T settle (caller keeps funds).
+ * On success the fetch is stashed for runAmazon to reuse.
+ */
+const precheckAmazon: PaidPrecheck = async (req, res) => {
+  const locals = res.locals as {
+    amazon?: ParsedAmazon;
+    amazonData?: { data: AmazonFetch; fromCache: boolean };
+  };
+  let p = locals.amazon;
+  if (!p) {
+    const parsed = parseAmazonBody(req.body);
+    if (!parsed.ok) return { ok: false, status: 400, error: parsed.error };
+    p = parsed.value;
+  }
+  const { data, fromCache } = await fetchAmazonOffers(p.asin, p.domain);
+  if (data.offers.length === 0) {
+    return {
+      ok: false,
+      status: 404,
+      error: `no New offers found for ASIN ${p.asin} on amazon.${p.domain} — nothing to price against, so you were not charged`,
+    };
+  }
+  locals.amazonData = { data, fromCache };
+  return { ok: true };
+};
 
 // ---- keyword marketplaces (eBay, Walmart) ----------------------------------
 // Both are Definition B: a keyword search returns competing listings. Same
@@ -234,7 +266,10 @@ function makeKeywordRunner(fetchFn: KeywordFetch, meta: KeywordMeta) {
     }
     const { query, myPrice, myCost } = parsed.value;
     try {
-      const { data, fromCache } = await fetchFn(query);
+      // Reuse the deliverable precheck's fetch (charge-on-deliverable) so the
+      // paid run never hits the upstream twice.
+      const pre = (res.locals as { keywordData?: Awaited<ReturnType<KeywordFetch>> }).keywordData;
+      const { data, fromCache } = pre ?? (await fetchFn(query));
       const offers = relevanceFilter(data.offers, myPrice);
       const advice = buildAdvice({
         marketplace: meta.marketplace,
@@ -257,12 +292,51 @@ function makeKeywordRunner(fetchFn: KeywordFetch, meta: KeywordMeta) {
   };
 }
 
+/**
+ * Deliverable precheck factory for a PAID keyword route. Runs before x402
+ * settlement: fetch listings; if the query returns nothing, short-circuit with
+ * a 404 and DON'T settle (caller keeps funds). On success the fetch is stashed
+ * for the runner to reuse. A thrown upstream error (e.g. an anti-bot block)
+ * bubbles up and is also answered without settling.
+ */
+function makeKeywordPrecheck(fetchFn: KeywordFetch, meta: KeywordMeta): PaidPrecheck {
+  return async (req, res) => {
+    const locals = res.locals as {
+      keyword?: ParsedKeyword;
+      keywordData?: Awaited<ReturnType<KeywordFetch>>;
+    };
+    let p = locals.keyword;
+    if (!p) {
+      const parsed = parseKeywordBody(req.body);
+      if (!parsed.ok) return { ok: false, status: 400, error: parsed.error };
+      p = parsed.value;
+    }
+    const result = await fetchFn(p.query);
+    if (result.data.offers.length === 0) {
+      return {
+        ok: false,
+        status: 404,
+        error: `no listings found on ${meta.marketplace} for "${p.query}" — nothing to price against, so you were not charged`,
+      };
+    }
+    locals.keywordData = result;
+    return { ok: true };
+  };
+}
+
 const runEbay = makeKeywordRunner(fetchEbayOffers, EBAY_META);
 const runWalmart = makeKeywordRunner(fetchWalmartOffers, WALMART_META);
 const runAliexpress = makeKeywordRunner(fetchAliexpressOffers, ALIEXPRESS_META);
 const runEtsy = makeKeywordRunner(fetchEtsyOffers, ETSY_META);
 const runTarget = makeKeywordRunner(fetchTargetOffers, TARGET_META);
 const runShopee = makeKeywordRunner(fetchShopeeOffers, SHOPEE_META);
+
+const precheckEbay = makeKeywordPrecheck(fetchEbayOffers, EBAY_META);
+const precheckWalmart = makeKeywordPrecheck(fetchWalmartOffers, WALMART_META);
+const precheckAliexpress = makeKeywordPrecheck(fetchAliexpressOffers, ALIEXPRESS_META);
+const precheckEtsy = makeKeywordPrecheck(fetchEtsyOffers, ETSY_META);
+const precheckTarget = makeKeywordPrecheck(fetchTargetOffers, TARGET_META);
+const precheckShopee = makeKeywordPrecheck(fetchShopeeOffers, SHOPEE_META);
 
 // ---- Best Price Scan (cross-marketplace) -----------------------------------
 
@@ -328,12 +402,41 @@ async function runBestPriceHandler(req: Request, res: Response): Promise<void> {
     return;
   }
   try {
-    res.json(await runBestPrice(parsed.value));
+    // Reuse the deliverable precheck's scan (charge-on-deliverable) so the paid
+    // run never fans out to every marketplace twice.
+    const pre = (res.locals as { bestResult?: BestPrice }).bestResult;
+    res.json(pre ?? (await runBestPrice(parsed.value)));
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(502).json({ error: `best price scan failed: ${msg}` });
   }
 }
+
+/**
+ * Deliverable precheck for the PAID Best Price Scan. Runs before x402
+ * settlement: run the cross-marketplace scan; if NO marketplace returned an
+ * offer there is nothing to rank, so short-circuit with a 404 and DON'T settle.
+ * On success the full result is stashed for the handler to return as-is.
+ */
+const precheckBestPrice: PaidPrecheck = async (req, res) => {
+  const locals = res.locals as { best?: ParsedBestPrice; bestResult?: BestPrice };
+  let p = locals.best;
+  if (!p) {
+    const parsed = parseBestPriceBody(req.body);
+    if (!parsed.ok) return { ok: false, status: 400, error: parsed.error };
+    p = parsed.value;
+  }
+  const result = await runBestPrice(p);
+  if (result.evidence.marketplacesWithOffers === 0) {
+    return {
+      ok: false,
+      status: 404,
+      error: `no offers found on any marketplace for "${p.query}" — nothing to rank, so you were not charged`,
+    };
+  }
+  locals.bestResult = result;
+  return { ok: true };
+};
 
 // ---- routes ----------------------------------------------------------------
 
@@ -353,7 +456,12 @@ app.post("/preview/amazon", previewLimiter, runAmazon);
 app.post(
   "/amazon",
   preflightAmazon,
-  paidRoute("POST /amazon", "Amazon competitor-price advice (Buy Box strategy)"),
+  paidRoute(
+    "POST /amazon",
+    "Amazon competitor-price advice (Buy Box strategy)",
+    config.x402PriceUsd,
+    precheckAmazon
+  ),
   runAmazon
 );
 
@@ -362,7 +470,7 @@ app.post("/preview/ebay", previewLimiter, runEbay);
 app.post(
   "/ebay",
   preflightKeyword,
-  paidRoute("POST /ebay", "eBay competitor-price advice (keyword listings)"),
+  paidRoute("POST /ebay", "eBay competitor-price advice (keyword listings)", config.x402PriceUsd, precheckEbay),
   runEbay
 );
 
@@ -371,7 +479,7 @@ app.post("/preview/walmart", previewLimiter, runWalmart);
 app.post(
   "/walmart",
   preflightKeyword,
-  paidRoute("POST /walmart", "Walmart competitor-price advice (keyword listings)"),
+  paidRoute("POST /walmart", "Walmart competitor-price advice (keyword listings)", config.x402PriceUsd, precheckWalmart),
   runWalmart
 );
 
@@ -380,7 +488,7 @@ app.post("/preview/aliexpress", previewLimiter, runAliexpress);
 app.post(
   "/aliexpress",
   preflightKeyword,
-  paidRoute("POST /aliexpress", "AliExpress competitor-price advice (keyword listings)"),
+  paidRoute("POST /aliexpress", "AliExpress competitor-price advice (keyword listings)", config.x402PriceUsd, precheckAliexpress),
   runAliexpress
 );
 
@@ -389,7 +497,7 @@ app.post("/preview/etsy", previewLimiter, runEtsy);
 app.post(
   "/etsy",
   preflightKeyword,
-  paidRoute("POST /etsy", "Etsy competitor-price advice (keyword listings)"),
+  paidRoute("POST /etsy", "Etsy competitor-price advice (keyword listings)", config.x402PriceUsd, precheckEtsy),
   runEtsy
 );
 
@@ -398,7 +506,7 @@ app.post("/preview/target", previewLimiter, runTarget);
 app.post(
   "/target",
   preflightKeyword,
-  paidRoute("POST /target", "Target competitor-price advice (keyword listings)"),
+  paidRoute("POST /target", "Target competitor-price advice (keyword listings)", config.x402PriceUsd, precheckTarget),
   runTarget
 );
 
@@ -407,7 +515,7 @@ app.post("/preview/shopee", previewLimiter, runShopee);
 app.post(
   "/shopee",
   preflightKeyword,
-  paidRoute("POST /shopee", "Shopee competitor-price advice (keyword listings)"),
+  paidRoute("POST /shopee", "Shopee competitor-price advice (keyword listings)", config.x402PriceUsd, precheckShopee),
   runShopee
 );
 
@@ -419,7 +527,8 @@ app.post(
   paidRoute(
     "POST /best-price",
     "Best Price Scan — cheapest across all marketplaces",
-    config.x402ComparePriceUsd
+    config.x402ComparePriceUsd,
+    precheckBestPrice
   ),
   runBestPriceHandler
 );

@@ -15,6 +15,17 @@ import {
 
 type Handler = (req: Request, res: Response, next: NextFunction) => unknown;
 
+/**
+ * Deliverable check run BEFORE x402 settlement (only when a payment proof is
+ * present). Return `{ ok: true }` to proceed to settlement, or a failure to
+ * short-circuit with an un-settled error response. A thrown error is treated as
+ * a transient upstream failure and also short-circuits without settling.
+ */
+export type PaidPrecheck = (
+  req: Request,
+  res: Response
+) => Promise<{ ok: true } | { ok: false; status: number; error: string }>;
+
 export const x402Enabled = (): boolean =>
   config.x402Mode !== "off" && !!config.x402PayTo;
 
@@ -59,9 +70,10 @@ function buildPaidMiddleware(
 export function paidRoute(
   routeKey: string,
   description: string,
-  priceUsd: string = config.x402PriceUsd
+  priceUsd: string = config.x402PriceUsd,
+  precheck?: PaidPrecheck
 ): Handler {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!x402Enabled()) return next();
 
     const hasProof =
@@ -71,6 +83,29 @@ export function paidRoute(
       req.headers["x402-payment"];
 
     if (hasProof) {
+      // Charge-on-deliverable. `syncSettle: true` moves funds the instant the
+      // payment middleware runs, and this server holds no key, so it can never
+      // refund. So before settling we prove a real result exists: the precheck
+      // fetches upstream and stashes the result on res.locals for the handler to
+      // reuse (no double fetch). If the upstream has nothing (not found) or
+      // fails, we answer WITHOUT settling — the caller keeps their money.
+      if (precheck) {
+        let verdict: Awaited<ReturnType<PaidPrecheck>>;
+        try {
+          verdict = await precheck(req, res);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          res
+            .status(503)
+            .json({ error: `upstream check failed — not charged: ${msg}`, charged: false });
+          return;
+        }
+        if (!verdict.ok) {
+          res.status(verdict.status).json({ error: verdict.error, charged: false });
+          return;
+        }
+      }
+
       let mw = paidCache.get(routeKey);
       if (!mw) {
         mw = buildPaidMiddleware(routeKey, description, priceUsd);
@@ -130,6 +165,8 @@ export function x402Info(): Record<string, unknown> {
       payTo: config.x402PayTo || null,
     },
     settlement: "on-chain via OKX facilitator (@okxweb3/x402-express)",
+    chargePolicy:
+      "charge-on-deliverable — the upstream is probed before settlement; a not-found result or an upstream failure returns an un-settled error (charged:false), so you are never charged for an empty result.",
     paid: [
       "POST /amazon",
       "POST /ebay",
